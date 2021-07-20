@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import platform
 
@@ -104,4 +105,30 @@ def fs_setup(fs_path, fsl_path='/usr/local/fsl', force=0):
     ## display the FS version
     fs_version()
             
+            
+
+def fs_funcdir(func_path=os.getenv('FUNCTIONALS_DIR'), str_pattern=''):
+    """This function creates the structure for a project.
+
+    Args:
+        func_path (str, optional): the path to functional data. This path 
+            will also be saved as FUNCTIONALS_DIR.. Defaults to 
+            os.getenv('FUNCTIONALS_DIR').
+        str_pattern (str, optional): the string pattern for session names. It
+            will be used to identify all the sessions. E.g., it can be "Face*"
+            (without quotes). Defaults to ''.
+
+    Returns:
+        str: path to the functional folder.
+        str list: a list of session codes.
+    """
+    if not bool(func_path):
+        func_path = os.path.join(os.getenv('SUBJECTS_DIR'), '..', 'functional_data')
         
+    # set the environmental variable of FUNCTIONALS_DIR
+    os.environ['FUNCTIONALS_DIR'] = func_path
+    
+    # obtain the session codes
+    sess_list = [f for f in os.listdir(func_path) if re.match(str_pattern, f) and '.' not in f]
+
+    return (func_path, sess_list)
