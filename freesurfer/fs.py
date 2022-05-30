@@ -1,6 +1,9 @@
 import os
 import re
 from itertools import compress
+import numpy as np
+import subprocess
+import nibabel
 
 # subject code and session lists
 def subjdir(stru_path=os.getenv('SUBJECTS_DIR'), str_pattern='', setdir=True):
@@ -35,6 +38,32 @@ def subjdir(stru_path=os.getenv('SUBJECTS_DIR'), str_pattern='', setdir=True):
     subj_list = [f for f in os.listdir(stru_path) if re.match(str_pattern, f) and '.' not in f]
     
     return stru_path, subj_list
+
+def funcdir(func_path=os.getenv('FUNCTIONALS_DIR'), str_pattern='',setdir=True):
+    """This function creates the structure for a project.
+
+    Args:
+        func_path (str, optional): the path to functional data. This path 
+            will also be saved as FUNCTIONALS_DIR.. Defaults to 
+            os.getenv('FUNCTIONALS_DIR').
+        str_pattern (str, optional): the string pattern for session names. It
+            will be used to identify all the sessions. E.g., it can be "Face*"
+            (without quotes). Defaults to ''.
+
+    Returns:
+        str: path to the functional folder.
+        str list: a list of session codes.
+    """
+    if not bool(func_path):
+        func_path = os.path.join(os.getenv('SUBJECTS_DIR'), '..', 'functional_data')
+        
+    # set the environmental variable of FUNCTIONALS_DIR
+    os.environ['FUNCTIONALS_DIR'] = func_path
+    
+    # obtain the session codes
+    sess_list = [f for f in os.listdir(func_path) if re.match(str_pattern, f) and '.' not in f]
+
+    return func_path, sess_list
     
 
 def sesslist(sessid='sessid*', func_path = os.getenv('FUNCTIONALS_DIR')):
@@ -240,7 +269,75 @@ def ana2con(ana_list, func_path=os.getenv('FUNCTIONALS_DIR')):
     return con_list
 
 
+# read files in FreeSurfer (with nibabel)
+def readsurf(surfFn, subjCode='fsaverage'):
+    
+    surfFile = os.path.join(os.getenv('SUBJECTS_DIR'), subjCode, 'surf', surfFn)
+    coord, faces = nibabel.freesurfer.io.read_geometry(surfFile)
+    
+    return coord, faces
+    
 
+
+# coordinate system
+def TNorig(subjCode, TN='t'):
+    origFile = os.path.join(os.getenv('SUBJECTS_DIR'), subjCode, 'mri', 'orig.mgz')
+    if TN=='t':
+        TNstr = '-tkr'
+    else:
+        TNstr = ''
+        
+    TNout = subprocess.check_output(['mri_info', '--vox2ras'+TNstr, origFile])
+    
+    TNfloat = [float(x) for x in str.split(TNout.decode("utf-8"))]
+    TNnp = np.array(TNfloat).reshape(4,4)
+    
+    return TNnp
+
+    
+
+
+def self2fsavg(inpoints, subjCode, surfFn):
+    
+    inpoints = np.asarray(inpoints).reshape(-1,3)
+    
+    taldir = os.path.join(os.getenv('SUBJECTS_DIR'), subjCode, 'mri', 'transforms', 'talairach.xfm')
+    xfmstrs = open(taldir, 'r', encoding="utf-8").read()
+        
+    xfmfloat = [float(x) for x in str.split(xfmstrs[:-2])[-12:]]
+    xfm = np.array(xfmfloat).reshape(3,4)
+    
+    Torig = TNorig(subjCode, 't')
+    Norig = TNorig(subjCode, 'n')
+    
+    # converting RAS 
+    inRAS = np.transpose(np.hstack((inpoints, np.ones((inpoints.shape[0], 1)))))
+    outRAS = xfm @ Norig @ np.linalg.inv(Torig) @ inRAS
+    
+    outpoints = np.transpose(outRAS)
+    
+    return (outpoints)
+    
+
+
+def vtx2fsavg(vtxIdx, subjCode, surfFn=''):
+    c, f = readsurf(surfFn, subjCode)
+    inpoints = c[vtxIdx, ]
+    
+    # display the input information
+    print(f'\nThe input vertex indices are:')
+    print(vtxIdx)
+    print('The coordinates on the surface are:')
+    print(inpoints)
+    
+    outpoints = self2fsavg(inpoints, subjCode, surfFn)
+    
+    return(outpoints)
+    
+
+
+
+## None of above
 # visualization
 def colors(color):
     """This function generates default rgb colors.
