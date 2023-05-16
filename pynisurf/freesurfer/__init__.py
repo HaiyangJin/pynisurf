@@ -2,7 +2,8 @@
 Tools used during surface-based analysis with FreeSurfer.
 """
 
-from .fs import (subjdir,
+from .fs import (setup, version, 
+                 subjdir,
                  readsurf)
 
 from .fast import (funcdir,
