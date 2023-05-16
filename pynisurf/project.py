@@ -3,13 +3,13 @@ import re
 import subprocess
 import platform
 
-import freesurfer as fs
-import bids
+import pynisurf.freesurfer as fs
+import pynisurf.bids as bids
 
-def fs_version(isnum=0):
+def fs_version(isnum=False, toprint=True):
     
     # check the if FS version is available
-    fscmd = 'recon-all -version'
+    fscmd = 'recon-all -version > /dev/null 2>&1'
     status = os.system(fscmd)
     
     if bool(status): 
@@ -20,7 +20,7 @@ def fs_version(isnum=0):
     
     if not isnum:
         # output strings
-        if not bool(status): # FS was set up
+        if (not bool(status)) & toprint: # FS was set up
             # display the version
             print(f'\nThe version of FreeSurfer in use is:\n{fs_v}')
     else:
@@ -76,7 +76,7 @@ def fs_setup(fsdir, fsldir='/usr/local/fsl', force=0):
     # please ignore this part and just set fsPath as the full path to FreeSurfer
     if os.path.sep not in fsdir:
         # use fsPath as the verion number if fsPath is not a path 
-        # (e.g., '5.3', '6.0', '7.1') 
+        # (e.g., '5.3', '6.0', '7.3') 
         fsdir = f'/Applications/freesurfer/{fsdir}'
         
     ## Set up FreeSurfer
@@ -115,24 +115,23 @@ class project:
     def __init__(self, fsdir='', bidsdir='', subjdir='', funcdir='', str_pattern='sub-*'):
         
         fs_setup(fsdir) # setup FreeSurfer
-        self.fsversion = fs_version()
+        self.fsversion = fs_version('', False)
         
         # set up BIDS
         self.bidsdir, self.bidslist = bids.bidsdir(bidsdir, str_pattern)
         self.source = os.path.join(self.bidsdir, 'sourcedata')
         
         # set up SUBJECTS_DIR & FUNCTIONALS_DIR
-        if bool(subjdir):
-            subjdir = os.path.join(self.bidsdir, 'derivative', 'freesurfer')
+        if not bool(subjdir):
+            subjdir = os.path.join(self.bidsdir, 'derivatives', 'subjects')
         self.updatesubjdir(subjdir, str_pattern)
         # self.subjdir, self.subjlist = fs.subjdir(subjdir, str_pattern)
             
-        if bool(funcdir):
-            funcdir = os.path.join(self.bidsdir, 'derivative', 'functional_data')
+        if not bool(funcdir):
+            funcdir = os.path.join(self.bidsdir, 'derivatives', 'functionals')
         self.updatefuncdir(funcdir, str_pattern)
         # self.funcdir, self.funclist = fs.funcdir(funcdir, str_pattern)
     
-
     def updatesubjdir(self, subjdir, str_pattern='sub-*'):
         self.subjdir, self.subjlist = fs.subjdir(subjdir, str_pattern)
     

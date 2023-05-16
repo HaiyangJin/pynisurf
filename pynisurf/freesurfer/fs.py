@@ -11,7 +11,8 @@ import nibabel
 
 # subject code and session lists
 def subjdir(subjdir, str_pattern='', setdir=True):
-    """This function set up 'SUBJECTS_DIR' and output the subject code list.
+    """
+    This function set up 'SUBJECTS_DIR' and output the subject code list.
 
     Args:
         subjdir (str, optional): path to $SUBJECTS_DIR folder in FreeSurfer. 

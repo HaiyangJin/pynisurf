@@ -22,7 +22,7 @@ def funcdir(funcdir=os.getenv('FUNCTIONALS_DIR'), str_pattern='',setdir=True):
         str list: a list of session codes.
     """
     if not bool(funcdir):
-        funcdir = os.path.join(os.getenv('SUBJECTS_DIR'), '..', 'functional_data')
+        funcdir = os.path.join(os.getenv('SUBJECTS_DIR'), '..', 'functionals')
         
     if setdir:
         # set the environment variable of FUNCTIONALS_DIR
