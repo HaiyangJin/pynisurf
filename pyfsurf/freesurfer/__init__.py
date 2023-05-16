@@ -3,17 +3,12 @@ Tools used during surface-based analysis with FreeSurfer.
 """
 
 from .fs import (subjdir,
-                         readsurf)
+                 readsurf)
 
 from .fast import (funcdir,
-                     sesslist)
+                    sesslist)
 
-from .uti import (tocontrast, 
-                          tohemi,
-                          tosig, 
-                          totemplate,
-                          ana2con,
-                          )
+from .uti import (tocontrast, tohemi, tosig, totemplate, ana2con)
 
 __all__ = ['subjdir', 'readsurf',
            'funcdir', 'sesslist',

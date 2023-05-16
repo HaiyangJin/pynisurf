@@ -3,6 +3,9 @@ import re
 import subprocess
 import platform
 
+import freesurfer as fs
+import bids
+
 def fs_version(isnum=0):
     
     # check the if FS version is available
@@ -10,7 +13,7 @@ def fs_version(isnum=0):
     status = os.system(fscmd)
     
     if bool(status): 
-        print('\nFreeSurfer has not been set up properly...')
+        print('\nFreeSurfer is not set up properly...')
         return
     else:  # obtain the FS version if it was set up
         fs_v = str(subprocess.check_output(['recon-all', '-version'], stderr=subprocess.STDOUT), 'utf-8')
@@ -35,7 +38,7 @@ def fs_version(isnum=0):
     return fs_v
         
 
-def fsl_setup(fsl_path='/usr/local/fsl'):
+def fsl_setup(fsldir='/usr/local/fsl'):
     
     # check if FSL was already set up
     if bool(os.getenv('FSLDIR')):
@@ -43,18 +46,18 @@ def fsl_setup(fsl_path='/usr/local/fsl'):
         return
     
     path = os.getenv('PATH')
-    os.environ['FSLDIR'] = fsl_path
-    os.environ['PATH'] = f'{fsl_path}/bin:{path}'
+    os.environ['FSLDIR'] = fsldir
+    os.environ['PATH'] = f'{fsldir}/bin:{path}'
     os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
     os.system('export FSLDIR PATH')
     status = os.system('sh ${FSLDIR}/etc/fslconf/fsl.sh')
     
-    assert not bool(status), print(f'\nfsl.sh cannot be found at {fsl_path}/etc/fslconf/')
+    assert not bool(status), print(f'\nfsl.sh cannot be found at {fsldir}/etc/fslconf/')
     
     print('\nFSL is set up successfully [I hope so].')
     
 
-def fs_setup(fs_path, fsl_path='/usr/local/fsl', force=0):
+def fs_setup(fsdir, fsldir='/usr/local/fsl', force=0):
 
     if bool(os.getenv('FREESURFER_HOME')) and force:
         print('\nFreeSurfer was already set up.')
@@ -62,46 +65,80 @@ def fs_setup(fs_path, fsl_path='/usr/local/fsl', force=0):
         return
     
     # Default path to FreeSurfer in Mac or Linux
-    if not bool(fs_path):
+    if not bool(fsdir):
         if platform.system()=='Darwin':
-            fs_path = '/Applications/freesurfer'
+            fsdir = '/Applications/freesurfer'
         elif platform.system()=='Linux':
             fsPath = '/usr/local/freesurfer'
         else:
             raise Exception('Platform not supported.')
     
     # please ignore this part and just set fsPath as the full path to FreeSurfer
-    if os.path.sep not in fs_path:
+    if os.path.sep not in fsdir:
         # use fsPath as the verion number if fsPath is not a path 
         # (e.g., '5.3', '6.0', '7.1') 
-        fs_path = f'/Applications/freesurfer/{fs_path}'
+        fsdir = f'/Applications/freesurfer/{fsdir}'
         
     ## Set up FreeSurfer
-    os.environ['FREESURFER_HOME'] = fs_path
-    os.environ['SUBJECTS_DIR'] = os.path.join(fs_path, 'subjects')
+    os.environ['FREESURFER_HOME'] = fsdir
+    os.environ['SUBJECTS_DIR'] = os.path.join(fsdir, 'subjects')
     
-    status = os.system(f'source {fs_path}/FreeSurferEnv.sh')
+    status = os.system(f'source {fsdir}/FreeSurferEnv.sh')
     
     if bool(status):
         os.environ['FREESURFER_HOME'] = ''
-        raise Exception(f'SetUpFreeSurfer.sh cannot be found at {fs_path}.')
+        raise Exception(f'SetUpFreeSurfer.sh cannot be found at {fsdir}.')
     
-    fsl_setup(fsl_path)
+    fsl_setup(fsldir)
     
     ## Set PATH and environment variable
     path = os.getenv('PATH')
     os.environ['PATH'] = f'/usr/local/bin:{path}' # add /usr/local/bin to PATH
-    os.environ['PATH'] = f'{fs_path}/tktools:{path}' # add /Applications/freesurfer/tktools: to PATH
-    os.environ['PATH'] = f'{fs_path}/fsfast/bin:{path}' # add /Applications/freesurfer/fsfast/bin: to PATH
-    os.environ['PATH'] = f'{fs_path}/bin:{path}' # add /Applications/freesurfer/bin: to PATH
+    os.environ['PATH'] = f'{fsdir}/tktools:{path}' # add /Applications/freesurfer/tktools: to PATH
+    os.environ['PATH'] = f'{fsdir}/fsfast/bin:{path}' # add /Applications/freesurfer/fsfast/bin: to PATH
+    os.environ['PATH'] = f'{fsdir}/bin:{path}' # add /Applications/freesurfer/bin: to PATH
     
-    os.environ['FSFAST_HOME'] = os.path.join(fs_path, 'fsfast')
+    os.environ['FSFAST_HOME'] = os.path.join(fsdir, 'fsfast')
     os.environ['FSF_OUTPUT_FORMAT'] = 'nii.gz'
-    os.environ['MNI_DIR'] = os.path.join(fs_path, 'mni')
+    os.environ['MNI_DIR'] = os.path.join(fsdir, 'mni')
     
     print('\nFreeSurfer is set up successfully [I hope so].')
     
     ## display the FS version
     fs_version()
             
+class project:
+    '''
+    Create a project and store the relevant information.
+    '''
+   
+    def __init__(self, fsdir='', bidsdir='', subjdir='', funcdir='', str_pattern='sub-*'):
+        
+        fs_setup(fsdir) # setup FreeSurfer
+        self.fsversion = fs_version()
+        
+        # set up BIDS
+        self.bidsdir, self.bidslist = bids.bidsdir(bidsdir, str_pattern)
+        self.source = os.path.join(self.bidsdir, 'sourcedata')
+        
+        # set up SUBJECTS_DIR & FUNCTIONALS_DIR
+        if bool(subjdir):
+            subjdir = os.path.join(self.bidsdir, 'derivative', 'freesurfer')
+        self.updatesubjdir(subjdir, str_pattern)
+        # self.subjdir, self.subjlist = fs.subjdir(subjdir, str_pattern)
+            
+        if bool(funcdir):
+            funcdir = os.path.join(self.bidsdir, 'derivative', 'functional_data')
+        self.updatefuncdir(funcdir, str_pattern)
+        # self.funcdir, self.funclist = fs.funcdir(funcdir, str_pattern)
+    
 
+    def updatesubjdir(self, subjdir, str_pattern='sub-*'):
+        self.subjdir, self.subjlist = fs.subjdir(subjdir, str_pattern)
+    
+    def updatefuncdir(self, funcdir, str_pattern='sub-*'):
+        self.funcdir, self.funclist = fs.funcdir(funcdir, str_pattern)
+    
+        
+        
+  

@@ -10,11 +10,11 @@ import subprocess
 import nibabel
 
 # subject code and session lists
-def subjdir(stru_path, str_pattern='', setdir=True):
+def subjdir(subjdir, str_pattern='', setdir=True):
     """This function set up 'SUBJECTS_DIR' and output the subject code list.
 
     Args:
-        stru_path (str, optional): path to $SUBJECTS_DIR folder in FreeSurfer. 
+        subjdir (str, optional): path to $SUBJECTS_DIR folder in FreeSurfer. 
             Defaults to os.getenv('SUBJECTS_DIR').
         str_pattern (str, optional): string pattern used to identify subject
             folders. Defaults to ''.
@@ -22,24 +22,24 @@ def subjdir(stru_path, str_pattern='', setdir=True):
             Defaults to True.
 
     Returns:
-        stru_path (str): path to the structural folder.
+        subjdir (str): path to the structural folder.
         subj_list (str list): a list of subject codes.
     """
-    if not(bool(stru_path)):
-        stru_path=os.getenv('SUBJECTS_DIR')
+    if not(bool(subjdir)):
+        subjdir=os.getenv('SUBJECTS_DIR')
     
     # my sceret default path to 'fsaverage'
-    if stru_path == 'myfs':
-        stru_path = os.path.join(os.getenv('HOME'), 'GoogleDrive', '102_fMRI', 'fMRITemplate')
+    if subjdir == 'myfs':
+        subjdir = os.path.join(os.getenv('HOME'), 'GoogleDrive', '102_fMRI', 'fMRITemplate')
         
     if setdir:
-        os.environ['SUBJECTS_DIR'] = stru_path
-        print(f'\n$SUBJECTS_DIR is set as {stru_path} now...')
+        os.environ['SUBJECTS_DIR'] = subjdir
+        print(f'\n$SUBJECTS_DIR is set as {subjdir} now...')
         
     # subject code information
-    subj_list = [f for f in os.listdir(stru_path) if re.match(str_pattern, f) and '.' not in f]
+    subjlist = [f for f in os.listdir(subjdir) if re.match(str_pattern, f) and '.' not in f]
     
-    return stru_path, subj_list
+    return subjdir, subjlist
 
 
 
@@ -103,7 +103,5 @@ def vtx2fsavg(vtxIdx, subjCode, surfFn=''):
     outpoints = self2fsavg(inpoints, subjCode, surfFn)
     
     return(outpoints)
-
-# Visualization
 
     
