@@ -208,6 +208,41 @@ def info2fn(info, secsep='_', valuesep='-'):
     
     # join all sections and add extension
     return secsep.join(sec)+ext
+
+def listfile(filewc='*', subjList='sub-*', modality='func'):
+    """Collect the file list for a given modality.
+
+    Args:
+        filewc (str, optional): filename wild card to be used to identify files. Defaults to '*', i.e., all files.
+        subjList (str, optional): <list str> a list of subject folders in {bidsDir}. OR <str> wildcard strings to match the subject folders via bids_dir(). Defaults to 'sub-*'. Defaults to 'sub-*'.
+        modality (str, optional): the moduality folders ('func', 'anat', 'fmap', ...). Defaults to 'func'.
+
+    Returns:
+        list: a list of identified files.
+    
+    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """    
+    
+    if isinstance(subjList, str): 
+        bidsDir, subjList=bidsdir('', subjList, False)
+    else:
+        # get bidsDir
+        bidsDir, tmp = bidsdir('', 'sub-*', False)
+        
+    filelist = []
+    for theSubj in subjList:
+        theSubjDir = os.listdir(os.path.join(bidsDir, theSubj))
+        
+        if modality in theSubjDir:
+            # there are no session folders
+            thefile = glob.glob(os.path.join(bidsDir, theSubj, modality, filewc))
+        else:
+            # there are multiple session folders
+            thefile = [glob.glob(os.path.join(bidsDir, theSubj, session, modality, filewc)) for session in theSubjDir]
+            thefile = list(chain(*thefile)) # flatten the nested list to a list
+        filelist.append(thefile)
+        
+    return list(chain(*filelist)) # flatten the nested list to a list
     
    
 def fixfmap(intendList='*_bold.nii.gz', subjList='sub-*', fmapwc='*.json'):
@@ -223,34 +258,14 @@ def fixfmap(intendList='*_bold.nii.gz', subjList='sub-*', fmapwc='*.json'):
         
     Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
     """    
-    
-    ## Deal with inputs
     # make sure fmapwc ends with '.json'
     if not fmapwc.endswith('.json'): fmapwc = fmapwc + '.json'
-    # get subject list
-    if isinstance(subjList, str): 
-        bidsDir, subjList=bidsdir('', subjList, False)
-    else:
-        # get bidsDir
-        bidsDir, tmp = bidsdir('', 'sub-*', False)
     
     # get all fmap files
-    fmapfile = []
-    for theSubj in subjList:
-        theSubjDir = os.listdir(os.path.join(bidsDir, theSubj))
+    fmapjosns = listfile(fmapwc, subjList, 'fmap')
         
-        if 'fmap' in theSubjDir:
-            # there are no session folders
-            thefmapf = glob.glob(os.path.join(bidsDir, theSubj, 'fmap', fmapwc))
-        else:
-            # there are multiple session folders
-            thefmapf = [glob.glob(os.path.join(bidsDir, theSubj, session, 'fmap', fmapwc)) for session in theSubjDir]
-            thefmapf = list(chain(*thefmapf)) # flatten the nested list to a list
-        fmapfile.append(thefmapf)
-    fmapfile = list(chain(*fmapfile)) # flatten the nested list to a list
-    
     ## Fix fmap files
-    for ifmap in fmapfile:
+    for ifmap in fmapjosns:
         
         if isinstance(intendList, list):
             # use the list as allintend directly
@@ -280,8 +295,37 @@ def fixfmap(intendList='*_bold.nii.gz', subjList='sub-*', fmapwc='*.json'):
         # save the json file
         with open(ifmap, "w") as json_out:
             json.dump(val, json_out, indent=4)
-        
-            
+
+
+def fixfunc(taskName, subjList='sub-*', taskwc='*.json'):
+    """Fix the TaskName field in func json files.
+
+    Args:
+        taskName (str): task name to be added to the files identified by {taskStr}.
+        subjList (str, optional): <list str> a list of subject folders in {bidsDir}. OR <str> wildcard strings to match the subject folders via bids_dir(). Defaults to 'sub-*'.
+        taskwc (str, optional): wildcard strings to identify a list of func runs, for which 'TaskName' will be added to their json files. Defaults to '*.json' and then all func files are treated as one task. The name will be {taskName}.
+    
+    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """    
+    
+    # make sure taskwc ends with '.json'
+    if not taskwc.endswith('.json'): taskwc = taskwc + '.json'
+    
+    # get all func josn files
+    funcjosns = listfile(taskwc, subjList, 'func')
+    
+    # add task name
+    for ifunc in funcjosns:
+        # read the json file
+        with open(ifunc) as json_in:
+            val = json.load(json_in)
+        # add TaskName
+        val['TaskName'] = taskName
+        # save the json file
+        with open(ifunc, "w") as json_out:
+            json.dump(val, json_out, indent=4)
+    
+     
             
         
 
