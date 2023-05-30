@@ -16,17 +16,19 @@ class project:
         
         # set up BIDS
         self.bidsdir, self.bidslist = bids.bidsdir(bidsdir, str_pattern)
-        self.source = os.path.join(self.bidsdir, 'sourcedata')
+        self.sourcedata = os.path.join(self.bidsdir, 'sourcedata')
         
         # set up SUBJECTS_DIR & FUNCTIONALS_DIR
         if not bool(subjdir):
             subjdir = os.path.join(self.bidsdir, 'derivatives', 'subjects')
-        self.updatesubjdir(subjdir, str_pattern)
+        if os.path.isdir(subjdir):
+            self.updatesubjdir(subjdir, str_pattern)
         # self.subjdir, self.subjlist = fs.subjdir(subjdir, str_pattern)
             
         if not bool(funcdir):
             funcdir = os.path.join(self.bidsdir, 'derivatives', 'functionals')
-        self.updatefuncdir(funcdir, str_pattern)
+        if os.path.isdir(funcdir):
+            self.updatefuncdir(funcdir, str_pattern)
         # self.funcdir, self.funclist = fs.funcdir(funcdir, str_pattern)
     
     def updatesubjdir(self, subjdir, str_pattern='sub-*'):

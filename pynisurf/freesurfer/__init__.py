@@ -11,6 +11,7 @@ from .fast import (funcdir,
 
 from .uti import (tocontrast, tohemi, tosig, totemplate, ana2con)
 
-__all__ = ['subjdir', 'readsurf',
+__all__ = ['setup', 'version', 
+           'subjdir', 'readsurf',
            'funcdir', 'sesslist',
            'tocontrast', 'tohemi', 'tosig', 'totemplate', 'ana2con']
