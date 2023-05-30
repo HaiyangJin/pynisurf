@@ -2,7 +2,7 @@
 General utilities.
 '''
 
-import subprocess
+import subprocess, os, glob
 
 def cmdpath(cmdlist, **kwargs):
     """Convert directory/path to BASH compatible (e.g., convert ' ' to '\ ').
@@ -48,7 +48,7 @@ def runcmd(cmdlist, runcmd=1):
 
     Returns:
         cmdlist (str list OR str): A list of or one cmd.
-        isnotok (int): the status of running command (None means the commands were not run). 
+        status (int): the status of running command (None means the commands were not run). 
     """
     
     if isinstance(cmdlist, str):
@@ -56,8 +56,12 @@ def runcmd(cmdlist, runcmd=1):
         
     if runcmd:
         # run the command
-        isnotok = [subprocess.Popen(cmd, shell=True).wait() for cmd in cmdlist]
+        status = [subprocess.Popen(cmd, shell=True).wait() for cmd in cmdlist]
     else:
-        isnotok = None * len(cmdlist)
+        status = None * len(cmdlist)
         
-    return (cmdlist, isnotok)
+    return cmdlist, status
+
+
+def listdirabs(path):
+        return [os.path.join(path, f) for f in os.listdir(path)]

@@ -2,13 +2,13 @@
 Tools for BIDS strcture.
 """
 
-import os
-import re
+import os, re, glob
+import json
 from itertools import chain
 
 import pynisurf.utilities as utilities
 
-def bidsdir(bidsdir, str_pattern='sub-*', setdir=True):
+def bidsdir(bidsdir='', str_pattern='sub-*', setdir=True):
     """Set bidsDir as a global environment "BIDS_DIR". bidsDir's sub-directory should be the BIDS folder, which saves 'sourcedata', 'derivatives', 'sub-x', etc (or some of them).
 
     Args:
@@ -19,6 +19,8 @@ def bidsdir(bidsdir, str_pattern='sub-*', setdir=True):
     Returns:
         bidsdir (str): full path to the BIDS direcotry.
         bidslist (str list): a list of BIDS subjects.
+        
+    Created on 2023-May-16 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
     """
     
     if not bool(bidsdir):
@@ -45,8 +47,10 @@ def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
         runcmd (int, optional): Whether to run the commands. Defaults to True.
 
     Returns:
-        d2bcmd (str list) dcm2bids commands.
-        isnotok (boo vec) status of running d2bcmd.
+        cmdlist (str list) dcm2bids commands.
+        status (boo vec) status of running d2bcmd.
+        
+    Created on 2023-May-29 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
     """
     
     ## Deal with inputs
@@ -104,7 +108,180 @@ def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
     cmdlist = list(chain(*cmdlist))
            
     ## Run cmd
-    cmdlisttmp, isnotok = utilities.runcmd(cmdlist, runcmd)
+    cmdlist, status = utilities.runcmd(cmdlist, runcmd)
     
-    return (cmdlisttmp, isnotok)
+    return (cmdlist, status)
+
+
+def fn2info(fn, secsep='_', valuesep='-', 
+            modality=['bold', 'sbref', 'epi', 'T1w', 'T2w', 
+            'scans', 'events',
+            'inflated', 'midthickness', 'pial', 'smoothwm', 'probseg', 
+            'timeseries', 'xfm', 'boldref', 'dseg', 'mask']):
+    """Collects the relevant information from the filename by section (<secstr>) and value (<valuestr>) strings.
+
+    Args:
+        fn (str): the file name to be parsed.
+        secsep (str, optional): the string to be used to separate the filename into different sections. Defaults to '_'.
+        valuesep (str, optional): the string to be used to separate each section into fieldname and value. Only the first valuestr will be used. Defaults to '-'.
+        modality (list, optional): a list of strings to be identified as 'modality'. Other strings will be identified as 'custom*'. Defaults to ['bold', 'sbref', 'epi', 'T1w', 'T2w', 'scans', 'events', 'inflated', 'midthickness', 'pial', 'smoothwm', 'probseg', 'timeseries', 'xfm', 'boldref', 'dseg', 'mask'].
+
+    Returns:
+        info (dict): the information in a dict.
+        
+    Examples:
+        info = fn2info('sub-002_TaskName_ses-001_Run-01_bold.nii.gz')
+        info = fn2info('sub-S02_task-TN_run-4_space-fsnative_hemi-L_bold.func.gii')
+        info = fn2info('sub-1_task-S_run-4_space-fsLR_den-91k_bold.dtseries.nii')
+        
+    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """
+    
+    # remove the path
+    fname = os.path.basename(fn)
+    # path = os.path.dirname(fn)
+    
+    # strings after the first '.' are regarded as extension
+    idx = len(fname) 
+    re_idx = re.search('\.', fname)
+    if re_idx is not None: idx = re_idx.start()
+    ext = fname[idx:]
+    
+    ## Gather information
+    # split string by '_' for section (field) and by "-" for value
+    sec = fname[:idx].split(secsep)
+    
+    # deal with values without fieldname
+    noFieldn = [valuesep not in each for each in sec]
+    backupFields = ['custom%d' % (x+1) for x in range(len(noFieldn))]
+    # the last is modality (if applicable)
+    if noFieldn[-1]==True & (sec[-1] in modality):
+        backupFields[-1] = 'modality'
+        
+    # update/add fieldname
+    for i, v in enumerate(noFieldn):
+        if v:
+            sec[i] = backupFields[i]+valuesep+sec[i]
+
+    # identify all (the first) {valuesep}
+    info = {}
+    for isec in sec:
+        idx = re.search(valuesep, isec)
+        info[isec[:idx.start()]] = isec[idx.start()+1:]
+    info['ext'] = ext
+
+    return info
+    
+
+def info2fn(info, secsep='_', valuesep='-'):
+    """converts info_struct (can be obtained via fn2info()) into a filename (str).
+
+    Args:
+        info (dict): the information in a dict.
+        secsep (str, optional): the string to be used to separate the filename into different sections. Defaults to '_'.
+        valuesep (str, optional): the string to be used to separate each section into fieldname and value. Only the first valuestr will be used. Defaults to '-'.
+
+    Returns:
+        fn (str): the output filename.
+        
+    Examples:
+        info = fn2info('sub-002_TaskName_ses-001_Run-01_bold.nii.gz')
+        fn = info2fn(info)
+        
+    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """
+    
+    # save extension
+    if 'ext' in info.keys():
+        ext = info['ext']
+        info.pop('ext')
+    else:
+        ext = ''
+        
+    # join strings for each section
+    sec = []
+    for k,v in info.items():
+        if k.startswith('custom') or (k=='modality'):
+            sec.append(v)
+        else:
+            sec.append(k+valuesep+v)
+    
+    # join all sections and add extension
+    return secsep.join(sec)+ext
+    
    
+def fixfmap(intendList='*_bold.nii.gz', subjList='sub-*', fmapwc='*.json'):
+    """Fix the IntendedFor field in fmap json files. (Probably not useful anymore.)
+
+    Args:
+        intendList (str, optional): <list str> a list of files to be assigned to "intendedFor" of fmap json files. OR <str> wildcard strings to identify the files to be assigned to "intendedFor" of fmap json files. Defaults to '*_bold.nii.gz'.
+        subjList (str, optional): <list str> a list of subject folders in {bidsDir}. OR <str> wildcard strings to match the subject folders via bids_dir(). Defaults to 'sub-*'.
+        fmapwc (str, optional): wildcard for the fmap json files, for which the intendList will be added to. Defaults to '*.json', i.e., all json files in fmap/ will be updated. 
+
+    Raises:
+        Exception: sanity check for session information. Data in the same folder should be from the same session.
+        
+    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """    
+    
+    ## Deal with inputs
+    # make sure fmapwc ends with '.json'
+    if not fmapwc.endswith('.json'): fmapwc = fmapwc + '.json'
+    # get subject list
+    if isinstance(subjList, str): 
+        bidsDir, subjList=bidsdir('', subjList, False)
+    else:
+        # get bidsDir
+        bidsDir, tmp = bidsdir('', 'sub-*', False)
+    
+    # get all fmap files
+    fmapfile = []
+    for theSubj in subjList:
+        theSubjDir = os.listdir(os.path.join(bidsDir, theSubj))
+        
+        if 'fmap' in theSubjDir:
+            # there are no session folders
+            thefmapf = glob.glob(os.path.join(bidsDir, theSubj, 'fmap', fmapwc))
+        else:
+            # there are multiple session folders
+            thefmapf = [glob.glob(os.path.join(bidsDir, theSubj, session, 'fmap', fmapwc)) for session in theSubjDir]
+            thefmapf = list(chain(*thefmapf)) # flatten the nested list to a list
+        fmapfile.append(thefmapf)
+    fmapfile = list(chain(*fmapfile)) # flatten the nested list to a list
+    
+    ## Fix fmap files
+    for ifmap in fmapfile:
+        
+        if isinstance(intendList, list):
+            # use the list as allintend directly
+            allintend = intendList
+        else:
+            # identify all BOLD runs in func/
+            intendfiles = glob.glob(os.path.join(os.path.dirname(ifmap), '..', 'func', intendList))
+            
+            # check session information
+            infos = [fn2info(x) for x in intendfiles]
+            ses = [x['ses'] for x in infos if 'ses' in x.keys()]
+            if ses is None:
+                sesstr = ''
+            elif len(set(ses))==1:
+                sesstr = 'ses-%s' % ses[0]
+            else:
+                raise Exception("It seems that more than one session file are included here.")
+            
+            # get the relative path of all intended files
+            allintend = [os.path.join(sesstr, 'func', os.path.basename(x)) for x in intendfiles]
+        
+        # read the json file
+        with open(ifmap) as json_in:
+            val = json.load(json_in)
+        # add IntendedFor
+        val['IntendedFor'] = allintend
+        # save the json file
+        with open(ifmap, "w") as json_out:
+            json.dump(val, json_out, indent=4)
+        
+            
+            
+        
+
