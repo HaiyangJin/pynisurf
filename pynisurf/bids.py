@@ -2,7 +2,7 @@
 Tools for BIDS strcture.
 """
 
-import os, re, glob
+import os, re, glob, shutil
 import json
 from itertools import chain
 
@@ -326,6 +326,60 @@ def fixfunc(taskName, subjList='sub-*', taskwc='*.json'):
             json.dump(val, json_out, indent=4)
     
      
-            
+def cpevent(subjCode, eventwd='', runwd='*_bold.nii.gz', ses=''):   
+    """Copy event files to the BIDS folder.
+
+    Args:
+        subjCode (str): subject code in bidsdir().
+        eventwd (str OR str list, optional): full path wildcards to be used to identify the event files to be copied. Defaults to ''.
+        runwd (str OR str list, optional):wildcards to be used to identify the functional runs (BOLD), whose names will be used as the new names for the event files. Defaults to '*_bold.nii.gz'.
+        ses (str, optional): the session name. Default to '', i.e., no session informaiton/folder is available.
+
+    Returns:
+        srclist: a list of srouce files.
+        dstlist: a list of destination files.
+        
+    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """
+    
+    ## Deal with inputs
+    bidsDir, subjList = bidsdir('')
+    assert subjCode in subjList, (f'Cannot find {subjCode} in {bidsDir}.')  
+    
+    # wildcard for the event files and runs
+    if isinstance(eventwd, str): eventwd = [eventwd]
+    if isinstance(runwd, str): runwd = [runwd]
+    nwd = len(eventwd)
+    assert nwd==len(runwd), (f'The length of "eventwd" (%d) and "runwd" (%d) is not the same.', nwd, len(runwd))
+        
+    # set session info
+    if isinstance(ses, int): ses = str(int)
+    if not ses.startswith('ses-'): ses = 'ses-'+ses
+
+    # Find and copy files
+    srclist = []
+    dstlist = []
+    for iwd in range(nwd):
+        
+        # source files
+        src = glob.glob(eventwd[iwd])
+        assert src is None, (f'Cannot find %s in pwd.') % (eventwd[iwd])
+        
+        # destination files
+        runs = glob.glob(os.path.join(bidsDir, subjCode, ses, 'func', runwd[iwd]))
+        assert runs is None, (f'Cannot find %s in %s.') % (runwd[iwd], os.path.join(bidsDir, subjCode, ses, 'func'))
+        dst = [r.replace('_bold.nii.gz', '_events.tsv') for r in runs]
+        
+        # copy files
+        [shutil.copyfile(src[i], dst[i]) for i in range(len(src))]
+        
+        # save src and dst lists
+        srclist+=src
+        dstlist+=dst
+    
+    return srclist, dstlist
+        
+        
+        
         
 
