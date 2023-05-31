@@ -9,11 +9,11 @@ from .bids import (bidsdir, dcm2bids,
                    fixfmap, fixfunc, cpevent,
                    fmriprep)
 
-from .utilities import (cmdpath, runcmd)
+from .utilities import (cmdpath, runcmd, listdirabs, mkfile)
 
 __all__ = ['project', 
            'bidsdir', 'dcm2bids',
            'fn2info', 'info2fn', 
            'fixfmap', 'fixfunc', 'cpevent',
            'fmriprep',
-           'cmdpath', 'runcmd']
+           'cmdpath', 'runcmd', 'listdirabs', 'mkfile']

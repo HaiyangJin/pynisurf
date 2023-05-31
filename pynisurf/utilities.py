@@ -2,7 +2,7 @@
 General utilities.
 '''
 
-import subprocess, os, glob
+import subprocess, os
 
 def cmdpath(cmdlist, **kwargs):
     """Convert directory/path to BASH compatible (e.g., convert ' ' to '\ ').
@@ -64,4 +64,32 @@ def runcmd(cmdlist, runcmd=1):
 
 
 def listdirabs(path):
-        return [os.path.join(path, f) for f in os.listdir(path)]
+    """List all files in a directory with absolute path.
+
+    Args:
+        path (str): path to the directory.
+
+    Returns:
+        list: a list of files in the directory.
+        
+    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """
+    return [os.path.join(path, f) for f in os.listdir(path)]
+
+
+def mkfile(content=[], fname='tmp'):
+    """Make a file with content.
+
+    Args:
+        content (list, optional): content of the file. Defaults to [].
+        fname (str, optional): file name. Defaults to 'tmp'. 
+    """
+    
+    # make sure content is a list
+    if isinstance(content, str):
+        content = [content]
+    
+    # write to file
+    with open(fname, 'w') as f:
+        for line in content:
+            f.write(line+'\n')
