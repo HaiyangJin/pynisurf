@@ -38,6 +38,8 @@ setup(
     author="Haiyang Jin",
     author_email="haiyang.jin@outlook.com",
     packages=find_packages(exclude=["tests", ".github"]),
+    package_data={'': ['resources/*.*', 'freesurfer/reflabels/*']},
+    include_package_data=True,
     # install_requires=read_requirements("requirements.txt"),
     # entry_points={
     #     "console_scripts": ["project_name = project_name.__main__:main"]

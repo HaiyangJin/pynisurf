@@ -6,14 +6,14 @@ import os, re, glob, shutil
 import json
 from itertools import chain
 
-import pynisurf.utilities as utilities
+import pynisurf.utilities as uti
 
-def bidsdir(bidsDir='', str_pattern='sub-*', setdir=True):
+def bidsdir(bidsDir='', subjwc='sub-*', setdir=True):
     """Set bidsDir as a global environment "BIDS_DIR". bidsDir's sub-directory should be the BIDS folder, which saves 'sourcedata', 'derivatives', 'sub-x', etc (or some of them).
 
     Args:
         bidsDir (str): full path to the BIDS direcotry.
-        str_pattern (str, optional): wildcard to be used to identify subject list. Defaults to 'sub-*'.
+        subjwc (str, optional): wildcard to be used to identify subject list. Defaults to 'sub-*'.
         setdir (bool, optional): set the global environment $BIDS_DIR. Defaults to True.
 
     Returns:
@@ -32,9 +32,10 @@ def bidsdir(bidsDir='', str_pattern='sub-*', setdir=True):
         print(f'\n$BIDS_DIR is set as {bidsDir} now...')
     
     # obtain the session codes
-    bidslist = [f for f in os.listdir(bidsDir) if re.match(str_pattern, f) and '.' not in f]
+    bidslist = [f for f in os.listdir(bidsDir) if re.match(subjwc, f) and '.' not in f]
 
     return bidsDir, bidslist
+    
     
 def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
     """Convert DICOM to BIDS with dcm2bids.
@@ -87,12 +88,12 @@ def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
                     
         if not bool(dcmSess):
             # if no sub-dir is found in dcmDir, there is only 1 session
-            cmd = 'dcm2bids -d %s -o %s -p %s -c %s --forceDcm2niix --clobber' % (utilities.cmdpath(thisdabs), utilities.cmdpath(bidsDir), bidsSubj[iSubj], config)
+            cmd = 'dcm2bids -d %s -o %s -p %s -c %s --forceDcm2niix --clobber' % (uti.cmdpath(thisdabs), uti.cmdpath(bidsDir), bidsSubj[iSubj], config)
             
         elif not isSess:
             # if the sub-dir in dsubjDir are runs (instead of sessions)
             runfolders = [os.path.join(thisdabs, run) for run in dcmSess]
-            cmd = 'dcm2bids -d %s -o %s -p %s -c %s --forceDcm2niix --clobber' % (' '.join(runfolders), utilities.cmdpath(bidsDir), bidsSubj[iSubj], config)
+            cmd = 'dcm2bids -d %s -o %s -p %s -c %s --forceDcm2niix --clobber' % (' '.join(runfolders), uti.cmdpath(bidsDir), bidsSubj[iSubj], config)
             
         elif isSess:
             # each sub-dir is one session
@@ -101,14 +102,14 @@ def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
             if len(dcmid)==1: sessid = isSess # customize the session number
 
             # if the subdir in dsubjDir are sessions
-            cmd = ['dcm2bids -d %s -o %s -p %s -s %d -c %s --forceDcm2niix --clobber' % (utilities.cmdpath(os.path.join(thisdabs, dcmSess[dcmid[x]])), utilities.cmdpath(bidsDir), bidsSubj[iSubj], sessid[x], config) for x in dcmid]
+            cmd = ['dcm2bids -d %s -o %s -p %s -s %d -c %s --forceDcm2niix --clobber' % (uti.cmdpath(os.path.join(thisdabs, dcmSess[dcmid[x]])), uti.cmdpath(bidsDir), bidsSubj[iSubj], sessid[x], config) for x in dcmid]
                         
         cmdlist[iSubj] = cmd
     # flatten the nested list to a list
     cmdlist = list(chain(*cmdlist))
            
     ## Run cmd
-    cmdlist, status = utilities.runcmd(cmdlist, runcmd)
+    cmdlist, status = uti.runcmd(cmdlist, runcmd)
     
     return (cmdlist, status)
 
@@ -208,6 +209,7 @@ def info2fn(info, secsep='_', valuesep='-'):
     
     # join all sections and add extension
     return secsep.join(sec)+ext
+
 
 def listfile(filewc='*', subjList='sub-*', modality='func'):
     """Collect the file list for a given modality.
@@ -378,10 +380,81 @@ def cpevent(subjCode, eventwd='', runwd='*_bold.nii.gz', ses=''):
         dstlist+=dst
     
     return srclist, dstlist
+
+
+def mkignore(ignorelist=['tmp_dcm2bids/','tmp/','codes/']):
+    """Make .bidsignore file in the BIDS folder.
+
+    Args:
+        ignorelist (list, optional): directories or files to be ignored. Defaults to ['tmp_dcm2bids/','tmp/','codes/'].
         
+    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/) 
+    """
+    
+    # get bids dir
+    bidsDir=bidsdir(setdir=False)[0]
+    # make .gitignore
+    uti.mkfile(ignorelist, os.path.join(bidsDir, '.bidsignore'))
+    
+    
+def mktsv(content='sub-*', fname='participants.tsv', header='participant_id'):
+    """Make participants.tsv file in the BIDS folder.
+
+    Args:
+        content (str, optional): <list str> a list of subject folders in {bidsDir}. OR <str> wildcard strings to match the subject folders via bids_dir(). Defaults to 'sub-*'.
+        fname (str, optional): the name of the tsv file. Defaults to 'participants.tsv'.
+        header (str, optional): the header of the tsv file. Defaults to 'participant_id'.
+        
+    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """
+    
+    # get bids dir
+    bidsDir=bidsdir(setdir=False)[0]
+    # get list of subjects if content is a string
+    if isinstance(content, str):
+        content = bidsdir(subjwc=content, setdir=False)[1]
+    # make sure fname ends with '.tsv'
+    if not fname.endswith('.tsv'): fname = fname + '.tsv'
+    
+    # make participant tsv file
+    content.insert(0, header)
+    uti.mkfile(content, os.path.join(bidsDir, fname))
+    
+
+def mkreadme():
+    """Make README.md file in the BIDS folder.
+    
+    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """
+    
+    # get bids dir
+    bidsDir=bidsdir(setdir=False)[0]
+    # copy README.md
+    shutil.copyfile(os.path.join(os.path.dirname(__file__), 'resources', 'README.md'), os.path.join(bidsDir, 'README.md'))
+       
+    
+def validator(runcmd=True):
+    """Run bids_validator. This function needs Docker.
+
+    Args:
+        runcmd (bool, optional): whether to run the command. Defaults to True.
+
+    Returns:
+        int: status of running the command. 0 if no error.
+        
+    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """
+    
+    # get bids dir
+    bidsDir=bidsdir(setdir=False)[0]
+    # make the command for bids_validator
+    cmd = 'docker run -ti --rm -v %s:/data:ro bids/validator /data' % bidsDir
+    # run the command
+    return uti.runcmd(cmd, runcmd=runcmd)[1]
+    
         
 def fmriprep(subjCode, **kwargs):
-    """Run fmriprep for one subject.
+    """Run fmriprep for one subject. This function needs Docker.
 
     Args:
         subjCode (str):subject code in {bidsDir}.
@@ -454,7 +527,7 @@ def fmriprep(subjCode, **kwargs):
     
     ## Run cmd
     if kwargs['runcmd']:
-        status = utilities.runcmd(fpcmd)[1]
+        status = uti.runcmd(fpcmd)[1]
     else:
         status = None
 
