@@ -431,7 +431,27 @@ def mkreadme():
     bidsDir=bidsdir(setdir=False)[0]
     # copy README.md
     shutil.copyfile(os.path.join(os.path.dirname(__file__), 'resources', 'README.md'), os.path.join(bidsDir, 'README.md'))
-       
+    
+    
+def mkbidsfiles(force=False):
+    """Make .bidsignore, participants.tsv, and README.md files in the BIDS folder.
+    
+    Args:
+        force (bool, optional): whether to overwrite the existing files. Defaults to False.
+    
+    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """
+    
+    # get bids dir
+    bidsDir=bidsdir(setdir=False)[0]
+    
+    if not os.path.isfile(os.path.join(bidsDir, '.bidsignore')) or force:
+        mkignore()
+    if not os.path.isfile(os.path.join(bidsDir, 'participants.tsv')) or force:
+        mktsv()
+    if not os.path.isfile(os.path.join(bidsDir, 'README.md')) or force:
+        mkreadme()
+    
     
 def validator(runcmd=True):
     """Run bids_validator. This function needs Docker.
