@@ -8,33 +8,33 @@ from itertools import chain
 
 import pynisurf.utilities as utilities
 
-def bidsdir(bidsdir='', str_pattern='sub-*', setdir=True):
+def bidsdir(bidsDir='', str_pattern='sub-*', setdir=True):
     """Set bidsDir as a global environment "BIDS_DIR". bidsDir's sub-directory should be the BIDS folder, which saves 'sourcedata', 'derivatives', 'sub-x', etc (or some of them).
 
     Args:
-        bidsdir (str): full path to the BIDS direcotry.
+        bidsDir (str): full path to the BIDS direcotry.
         str_pattern (str, optional): wildcard to be used to identify subject list. Defaults to 'sub-*'.
         setdir (bool, optional): set the global environment $BIDS_DIR. Defaults to True.
 
     Returns:
-        bidsdir (str): full path to the BIDS direcotry.
+        bidsDir (str): full path to the BIDS direcotry.
         bidslist (str list): a list of BIDS subjects.
         
     Created on 2023-May-16 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
     """
     
-    if not bool(bidsdir):
-        bidsdir = os.getenv('BIDS_DIR')
+    if not bool(bidsDir):
+        bidsDir = os.getenv('BIDS_DIR')
         
     # set the environment variable of BIDS_DIR
     if setdir:
-        os.environ['BIDS_DIR'] = bidsdir
-        print(f'\n$BIDS_DIR is set as {bidsdir} now...')
+        os.environ['BIDS_DIR'] = bidsDir
+        print(f'\n$BIDS_DIR is set as {bidsDir} now...')
     
     # obtain the session codes
-    bidslist = [f for f in os.listdir(bidsdir) if re.match(str_pattern, f) and '.' not in f]
+    bidslist = [f for f in os.listdir(bidsDir) if re.match(str_pattern, f) and '.' not in f]
 
-    return bidsdir, bidslist
+    return bidsDir, bidslist
     
 def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
     """Convert DICOM to BIDS with dcm2bids.
@@ -54,15 +54,15 @@ def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
     """
     
     ## Deal with inputs
-    bidsdir = os.getenv('BIDS_DIR')
+    bidsDir = bidsdir(setdir=False)[0]
     
     if not bool(config):
-        config=os.path.join(bidsdir, 'codes', 'bids_convert.json')
+        config=os.path.join(bidsDir, 'codes', 'bids_convert.json')
     # make sure the config file exist
     assert os.path.isfile(config), (f'Cannot find the config file:\n%s', config)
     
-    dcmdir = os.path.join(bidsdir, 'sourcedata')
-    assert os.path.isdir(dcmdir), (f'Cannot find sourcedata/ in %s', bidsdir)
+    dcmdir = os.path.join(bidsDir, 'sourcedata')
+    assert os.path.isdir(dcmdir), (f'Cannot find sourcedata/ in %s', bidsDir)
     
     # input subj list
     if isinstance(dcmSubj, str):
@@ -87,12 +87,12 @@ def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
                     
         if not bool(dcmSess):
             # if no sub-dir is found in dcmDir, there is only 1 session
-            cmd = 'dcm2bids -d %s -o %s -p %s -c %s --forceDcm2niix --clobber' % (utilities.cmdpath(thisdabs), utilities.cmdpath(bidsdir), bidsSubj[iSubj], config)
+            cmd = 'dcm2bids -d %s -o %s -p %s -c %s --forceDcm2niix --clobber' % (utilities.cmdpath(thisdabs), utilities.cmdpath(bidsDir), bidsSubj[iSubj], config)
             
         elif not isSess:
             # if the sub-dir in dsubjDir are runs (instead of sessions)
             runfolders = [os.path.join(thisdabs, run) for run in dcmSess]
-            cmd = 'dcm2bids -d %s -o %s -p %s -c %s --forceDcm2niix --clobber' % (' '.join(runfolders), utilities.cmdpath(bidsdir), bidsSubj[iSubj], config)
+            cmd = 'dcm2bids -d %s -o %s -p %s -c %s --forceDcm2niix --clobber' % (' '.join(runfolders), utilities.cmdpath(bidsDir), bidsSubj[iSubj], config)
             
         elif isSess:
             # each sub-dir is one session
@@ -101,7 +101,7 @@ def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
             if len(dcmid)==1: sessid = isSess # customize the session number
 
             # if the subdir in dsubjDir are sessions
-            cmd = ['dcm2bids -d %s -o %s -p %s -s %d -c %s --forceDcm2niix --clobber' % (utilities.cmdpath(os.path.join(thisdabs, dcmSess[dcmid[x]])), utilities.cmdpath(bidsdir), bidsSubj[iSubj], sessid[x], config) for x in dcmid]
+            cmd = ['dcm2bids -d %s -o %s -p %s -s %d -c %s --forceDcm2niix --clobber' % (utilities.cmdpath(os.path.join(thisdabs, dcmSess[dcmid[x]])), utilities.cmdpath(bidsDir), bidsSubj[iSubj], sessid[x], config) for x in dcmid]
                         
         cmdlist[iSubj] = cmd
     # flatten the nested list to a list
@@ -227,7 +227,7 @@ def listfile(filewc='*', subjList='sub-*', modality='func'):
         bidsDir, subjList=bidsdir('', subjList, False)
     else:
         # get bidsDir
-        bidsDir, tmp = bidsdir('', 'sub-*', False)
+        bidsDir = bidsdir(setdir=False)[0]
         
     filelist = []
     for theSubj in subjList:
@@ -330,7 +330,7 @@ def cpevent(subjCode, eventwd='', runwd='*_bold.nii.gz', ses=''):
     """Copy event files to the BIDS folder.
 
     Args:
-        subjCode (str): subject code in bidsdir().
+        subjCode (str): subject code in {bidsDir}.
         eventwd (str OR str list, optional): full path wildcards to be used to identify the event files to be copied. Defaults to ''.
         runwd (str OR str list, optional):wildcards to be used to identify the functional runs (BOLD), whose names will be used as the new names for the event files. Defaults to '*_bold.nii.gz'.
         ses (str, optional): the session name. Default to '', i.e., no session informaiton/folder is available.
@@ -343,7 +343,7 @@ def cpevent(subjCode, eventwd='', runwd='*_bold.nii.gz', ses=''):
     """
     
     ## Deal with inputs
-    bidsDir, subjList = bidsdir('')
+    bidsDir, subjList = bidsdir(setdir=False)
     assert subjCode in subjList, (f'Cannot find {subjCode} in {bidsDir}.')  
     
     # wildcard for the event files and runs
@@ -380,6 +380,82 @@ def cpevent(subjCode, eventwd='', runwd='*_bold.nii.gz', ses=''):
     return srclist, dstlist
         
         
-        
-        
+def fmriprep(subjCode, **kwargs):
+    """Run fmriprep for one subject.
 
+    Args:
+        subjCode (str):subject code in {bidsDir}.
+        
+        fslicense (str, optional): path to FreeSurfer license key file. Defaults to '$HOME/Documents/license.txt'.
+        outspace (str, optional): the name of the output space. Defaults to 'fsnative fsaverage6 fsaverage T1w MNI152NLin2009cAsym'.
+        cifti (str, optional): the resolution of the output CIFTI file. Defaults to '91k'.
+        nthreads (int, optional): number of threads per-process. Defaults to 8.
+        maxnthreads (int, optional): maximum number of threads per-process. Defaults to 8.
+        wd (str, optional): working dicrectory. Defaults to ''.
+        ignore (str, optional): steps to be ignored in fmriprep, e.g., {fieldmaps,slicetiming,sbref}. Defaults to ''.
+        runcmd (bool, optional): whether to run the command. Defaults to True.
+        extracmd (str, optional): extra command line arguments. Defaults to '--no-tty'.
+        pathtofmriprep (str, optional): path to fmriprep. Defaults to ''.
+
+    Returns:
+        fpcmd (str): the full fmriprep command line.
+        status (int): the status of the fmriprep command.
+        
+    Examples:
+        fmriprep('sub-01')
+    
+    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    """
+    
+    defaultKwargs = {'fslicense':'$HOME/Documents/license.txt', 
+                     'outspace':'fsnative fsaverage6 fsaverage T1w MNI152NLin2009cAsym',
+                     'cifti':'91k',    # --cifti-output
+                     'nthreads':8,     # above 8 does not seem to help
+                     'maxnthreads':8,  # maximum number of threads per-process
+                     'wd': '',         # working dicrectory
+                     'ignore': '',     # {fieldmaps,slicetiming,sbref}
+                     'runcmd': True,
+                     'extracmd':'--no-tty', # not use TTY
+                     'pathtofmriprep':''}
+    kwargs = {**defaultKwargs, **kwargs}
+    
+    bidsDir, subjList=bidsdir(setdir=False)
+
+    if not subjCode.startswith('sub-'): subjCode = 'sub-'+subjCode
+    assert subjCode in subjList, (f'Cannot find {subjCode} in {bidsDir}.')
+    
+    ## Deal with kwargs
+    extracmd = []
+    if bool(kwargs['fslicense']):
+        extracmd += ['--fs-license-file %s' % kwargs['fslicense']]
+    else:
+        extracmd += ['--no-freesurfer']
+    if bool(kwargs['outspace']):
+        extracmd += ['--output-spaces %s' % kwargs['outspace']]
+    if bool(kwargs['cifti']):
+        extracmd += ['--cifti-output %s' % kwargs['cifti']]
+    if kwargs['nthreads']>0:
+        extracmd += ['--nthreads %d' % kwargs['nthreads']]
+    if kwargs['maxnthreads']>0:
+        extracmd += ['--omp-nthreads %d' % kwargs['maxnthreads']]
+    if not bool(kwargs['wd']):
+        wd = os.path.join(bidsDir, '..', 'work')
+    else:
+        wd = kwargs['wd']
+    if not os.path.isdir(wd): os.mkdir(wd)
+    extracmd += ['--work-dir %s' % wd]
+    if bool(kwargs['ignore']):
+        extracmd += ['--ignore %s' % kwargs['ignore']]
+    if bool(kwargs['extracmd']):
+        extracmd += [kwargs['extracmd']]
+        
+    ## Make the cmd for fmriprep
+    fpcmd = '%sfmriprep-docker %s %s/derivatives participant --participant-label %s %s ' % (kwargs['pathtofmriprep'], bidsDir, bidsDir, subjCode, ' '.join(extracmd))
+    
+    ## Run cmd
+    if kwargs['runcmd']:
+        status = utilities.runcmd(fpcmd)[1]
+    else:
+        status = None
+
+    return fpcmd, status
