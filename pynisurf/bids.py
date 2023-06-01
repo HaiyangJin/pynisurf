@@ -1,5 +1,5 @@
 """
-Tools for BIDS strcture.
+Tools for BIDS structure.
 """
 
 import os, re, glob, shutil
@@ -480,8 +480,8 @@ def fmriprep(subjCode, **kwargs):
         subjCode (str):subject code in {bidsDir}.
         
         fslicense (str, optional): path to FreeSurfer license key file. Defaults to '$HOME/Documents/license.txt'.
-        outspace (str, optional): the name of the output space. Defaults to 'fsnative fsaverage6 fsaverage T1w MNI152NLin2009cAsym'.
-        cifti (str, optional): the resolution of the output CIFTI file. Defaults to '91k'.
+        outspace (str, optional): the name of the output space. Defaults to 'fsnative fsaverage T1w MNI152NLin2009cAsym'.
+        cifti (str, optional): the resolution of the output CIFTI file. Defaults to ''.
         nthreads (int, optional): number of threads per-process. Defaults to 8.
         maxnthreads (int, optional): maximum number of threads per-process. Defaults to 8.
         wd (str, optional): working dicrectory. Defaults to ''.
@@ -501,10 +501,10 @@ def fmriprep(subjCode, **kwargs):
     """
     
     defaultKwargs = {'fslicense':'$HOME/Documents/license.txt', 
-                     'outspace':'fsnative fsaverage6 fsaverage T1w MNI152NLin2009cAsym',
-                     'cifti':'91k',    # --cifti-output
-                     'nthreads':8,     # above 8 does not seem to help
-                     'maxnthreads':8,  # maximum number of threads per-process
+                     'outspace':'fsnative fsaverage T1w MNI152NLin2009cAsym', # fsaverage6
+                     'cifti':'',    # --cifti-output 91k 170k
+                     'nthreads':8,     # above 8 does not seem to help (?)
+                     'maxnthreads':4,  # maximum number of threads per-process
                      'wd': '',         # working dicrectory
                      'ignore': '',     # {fieldmaps,slicetiming,sbref}
                      'runcmd': True,
@@ -519,29 +519,35 @@ def fmriprep(subjCode, **kwargs):
     
     ## Deal with kwargs
     extracmd = []
-    if bool(kwargs['fslicense']):
+    if bool(kwargs['fslicense']) and '--fs-license-file' not in kwargs['extracmd']:
         extracmd += ['--fs-license-file %s' % kwargs['fslicense']]
     else:
         extracmd += ['--no-freesurfer']
-    if bool(kwargs['outspace']):
+        
+    if bool(kwargs['outspace']) and '--output-spaces %s' not in kwargs['extracmd']:
         extracmd += ['--output-spaces %s' % kwargs['outspace']]
-    if bool(kwargs['cifti']):
+    if bool(kwargs['cifti']) and '--cifti-output %s' not in kwargs['extracmd']:
         extracmd += ['--cifti-output %s' % kwargs['cifti']]
-    if kwargs['nthreads']>0:
+    
+    if kwargs['nthreads']/2!=kwargs['maxnthreads'] and kwargs['nthreads']>1:
+        print(f'Warning: It is highly recommended to set maxnthreads (%d) as half of nthreads (%d).' % ({kwargs['maxnthreads']}, {kwargs['nthreads']}))
+    if kwargs['nthreads']>0 and '--nthreads' not in kwargs['extracmd']:
         extracmd += ['--nthreads %d' % kwargs['nthreads']]
-    if kwargs['maxnthreads']>0:
+    if kwargs['maxnthreads']>0 and '--omp-nthreads' not in kwargs['extracmd']:
         extracmd += ['--omp-nthreads %d' % kwargs['maxnthreads']]
+        
     if not bool(kwargs['wd']):
         wd = os.path.join(bidsDir, '..', 'work')
     else:
         wd = kwargs['wd']
     if not os.path.isdir(wd): os.mkdir(wd)
     extracmd += ['--work-dir %s' % wd]
-    if bool(kwargs['ignore']):
+    
+    if bool(kwargs['ignore']) and '--ignore' not in kwargs['extracmd']:
         extracmd += ['--ignore %s' % kwargs['ignore']]
     if bool(kwargs['extracmd']):
         extracmd += [kwargs['extracmd']]
-        
+                
     ## Make the cmd for fmriprep
     fpcmd = '%sfmriprep-docker %s %s/derivatives participant --participant-label %s %s ' % (kwargs['pathtofmriprep'], bidsDir, bidsDir, subjCode, ' '.join(extracmd))
     
