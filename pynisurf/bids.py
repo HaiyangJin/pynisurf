@@ -520,7 +520,7 @@ def fmriprep(subjCode, **kwargs):
     ## Deal with kwargs
     extracmd = []
     if bool(kwargs['fslicense']) and '--fs-license-file' not in kwargs['extracmd']:
-        extracmd += ['--fs-license-file %s' % kwargs['fslicense']]
+        extracmd += ['--fs-license-file %s --fs-subjects-dir %s/derivatives/freesurfer/' % (kwargs['fslicense'], bidsDir)]
     else:
         extracmd += ['--no-freesurfer']
         
@@ -549,7 +549,7 @@ def fmriprep(subjCode, **kwargs):
         extracmd += [kwargs['extracmd']]
                 
     ## Make the cmd for fmriprep
-    fpcmd = '%sfmriprep-docker %s %s/derivatives participant --participant-label %s %s ' % (kwargs['pathtofmriprep'], bidsDir, bidsDir, subjCode, ' '.join(extracmd))
+    fpcmd = '%sfmriprep-docker %s %s/derivatives/fmriprep/ participant --participant-label %s %s ' % (kwargs['pathtofmriprep'], bidsDir, bidsDir, subjCode, ' '.join(extracmd))
     
     ## Run cmd
     if kwargs['runcmd']:

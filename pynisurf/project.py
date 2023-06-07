@@ -9,38 +9,49 @@ class project:
     Create a project and store the relevant information.
     '''
    
-    def __init__(self, fsdir, bidsdir='', subjdir='', funcdir='', str_pattern='sub-*'):
+    def __init__(self, fsdir, bidsdir='', subjdir='', funcdir='', subjwc='sub-*', legacy=True):
+        
+        # for legacy format, see https://fmriprep.org/en/stable/outputs.html#legacy-layout
         
         fs.setup(fsdir) # setup FreeSurfer
-        self.fsversion = fs.version('', False)
+        self.fsversion = fs.version(toprint=False)
         
         # set up BIDS
-        if bool(bidsdir):
-            self.bidsdir, self.bidslist = bids.bidsdir(bidsdir, str_pattern)
-            self.sourcedata = os.path.join(self.bidsdir, 'sourcedata')
+        self.legacy = legacy
+        if bool(bidsdir) and os.path.isdir(bidsdir):
+            self.updatebidsdir(bidsdir, subjwc='sub-*')
         
-        # set up SUBJECTS_DIR & FUNCTIONALS_DIR
-        if bool(subjdir):
-            subjdir = os.path.join(self.bidsdir, 'derivatives', 'subjects')
+        # set up SUBJECTS_DIR and FUNCTIONALS_DIR
+        if not bool(subjdir) and bool(bidsdir):
+            tmpdir = '' if legacy else 'sourcedata'
+            subjdir = os.path.join(bidsdir, 'derivatives', tmpdir, 'freesurfer')
         if os.path.isdir(subjdir):
-            self.updatesubjdir(subjdir, str_pattern)
-        # self.subjdir, self.subjlist = fs.subjdir(subjdir, str_pattern)
-            
+            self.updatesubjdir(subjdir, subjwc)
+        # self.subjdir, self.subjlist = fs.subjdir(subjdir, subjwc)
+        
+        # (to be updated later)
         if bool(funcdir):
             funcdir = os.path.join(self.bidsdir, 'derivatives', 'functionals')
         if os.path.isdir(funcdir):
-            self.updatefuncdir(funcdir, str_pattern)
-        # self.funcdir, self.funclist = fs.funcdir(funcdir, str_pattern)
+            self.updatefuncdir(funcdir, subjwc)
+        # self.funcdir, self.funclist = fs.funcdir(funcdir, subjwc)
         
-    def updatebidsdir(self, bidsdir, str_pattern='sub-*'):
-        self.bidsdir, self.bidslist = bids.bidsdir(bidsdir, str_pattern)
+    def setbidsdir(self, bidsdir, subjwc='sub-*'):
+        self.bidsdir, self.bidslist = bids.bidsdir(bidsdir, subjwc)
         self.sourcedata = os.path.join(self.bidsdir, 'sourcedata')
+            
+    def setsubjdir(self, subjdir, subjwc='sub-*'):
+        self.subjdir, self.subjlist = fs.subjdir(subjdir, subjwc)
     
-    def updatesubjdir(self, subjdir, str_pattern='sub-*'):
-        self.subjdir, self.subjlist = fs.subjdir(subjdir, str_pattern)
-    
-    def updatefuncdir(self, funcdir, str_pattern='sub-*'):
-        self.funcdir, self.funclist = fs.funcdir(funcdir, str_pattern)
+    def setfuncdir(self, funcdir, subjwc='sub-*'):
+        self.funcdir, self.funclist = fs.funcdir(funcdir, subjwc)
+        
+    def setfpdir(self, fpdir=''):
+        if bool(fpdir):
+            self.fpidr = fpdir
+        elif not bool(self.bidsdir):
+            self.fpdir = os.path.join(self.bidsdir, 'derivatives', 'fmriprep')
+        
     
         
         
