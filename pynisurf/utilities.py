@@ -7,14 +7,22 @@ import subprocess, os
 def cmdpath(cmdlist, **kwargs):
     """Convert directory/path to BASH compatible (e.g., convert ' ' to '\ ').
 
-    Args:
-        cmdlist (str list OR str): A list of or one cmd.
-        kwargs: key and value pairs to be used to replace strings. Specifically, the key (in kwargs) is the strings to be replaced and the value (in kwargs) is the strings to be replaced with (see example below).
-
-    Returns:
-        cmdlist (str list OR str): cmd after updating.
+    Parameters
+    ----------
+    cmdlist : str list OR str
+        A list of or one cmd.
         
-    Examples:
+    Keyword Arguments
+    -----------------
+    kwargs : key and value pairs to be used to replace strings. Specifically, the key (in kwargs) is the strings to be replaced and the value (in kwargs) is the strings to be replaced with (see example below).
+
+    Returns
+    -------
+    str list OR str
+        command after updating.
+
+    Examples
+    --------
         cmdpath('test ', e='magic') # output is 'tmagicst\\ '
     """
     
@@ -39,17 +47,23 @@ def cmdpath(cmdlist, **kwargs):
     return cmdlist   
     
     
-def runcmd(cmdlist, runcmd=1):
+def runcmd(cmdlist, runcmd=True):
     """Run BASH command and record the status.
 
-    Args:
-        cmdlist (str list OR str): A list of or one cmd.
-        runcmd (int, optional): Whether to run the commnad. Defaults to 1.
+    Parameters
+    ----------
+    cmdlist : str list OR str
+        A list of or one cmd.
+    runcmd : int, optional
+        Whether to run the commnad. Default to True.
 
-    Returns:
-        cmdlist (str list OR str): A list of or one cmd.
-        status (int): the status of running command (None means the commands were not run). 
-    """
+    Returns
+    -------
+    str list OR str
+        A list of or one command.
+    int
+        the status of running command (None means the commands were not run).
+    """    
     
     if isinstance(cmdlist, str):
         cmdlist = [cmdlist]
@@ -66,25 +80,30 @@ def runcmd(cmdlist, runcmd=1):
 def listdirabs(path):
     """List all files in a directory with absolute path.
 
-    Args:
-        path (str): path to the directory.
+    Parameters
+    ----------
+    path : str
+        path to the directory.
 
-    Returns:
-        list: a list of files in the directory.
-        
-    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    Returns
+    -------
+    list
+        a list of files in the directory.
     """
     return [os.path.join(path, f) for f in os.listdir(path)]
 
 
-def mkfile(content=[], fname='tmp'):
+def mkfile(content, fname='tmp'):
     """Make a file with content.
 
-    Args:
-        content (list, optional): content of the file. Defaults to [].
-        fname (str, optional): file name. Defaults to 'tmp'. 
+    Parameters
+    ----------
+    content : str list OR a str
+        content of the file.
+    fname : str, optional
+        file name, by default 'tmp'
     """
-    
+        
     # make sure content is a list
     if isinstance(content, str):
         content = [content]

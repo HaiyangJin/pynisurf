@@ -6,21 +6,25 @@ import os
 import re
 
 def funcdir(funcdir=os.getenv('FUNCTIONALS_DIR'), str_pattern='',setdir=True):
-    """
-    This function creates the structure for a project.
+    """Set the FUNCTIONAL_DIR environment variable and return the path
 
-    Args:
-        funcdir (str, optional): the path to functional data. This path 
-            will also be saved as FUNCTIONALS_DIR.. Defaults to 
-            os.getenv('FUNCTIONALS_DIR').
-        str_pattern (str, optional): the string pattern for session names. It
-            will be used to identify all the sessions. E.g., it can be "Face*"
-            (without quotes). Defaults to ''.
+    Parameters
+    ----------
+    funcdir : str, optional
+        the path to functional data. This path will also be saved as $FUNCTIONALS_DIR., by default os.getenv('FUNCTIONALS_DIR')
+    str_pattern : str, optional
+        the string pattern for session names. It will be used to identify all the sessions. E.g., it can be "Face*" (without quotes)., by default ''
+    setdir : bool, optional
+        whether to set the global environment, by default True
 
-    Returns:
-        str: path to the functional folder.
-        str list: a list of session codes.
-    """
+    Returns
+    -------
+    str
+        path to the functional folder.
+    str list
+        a list of session codes.
+    """    
+
     if not bool(funcdir):
         funcdir = os.path.join(os.getenv('SUBJECTS_DIR'), '..', 'functionals')
         
@@ -35,21 +39,26 @@ def funcdir(funcdir=os.getenv('FUNCTIONALS_DIR'), str_pattern='',setdir=True):
     
 
 def sesslist(sessid='sessid*', funcdir = os.getenv('FUNCTIONALS_DIR')):
-    """
-    This function reads the session ID file and output the session list.
+    """This function reads the session ID file and output the session list.
 
-    Args:
-        sessid (str, optional): name of the sessiond id file. OR the full name
-            of the session id file (with path). Defaults to 'sessid*'.
-        funcdir (str, optional): the full path to the functional folder.
-            Defaults to os.getenv('FUNCTIONALS_DIR').
+    Parameters
+    ----------
+    sessid : str, optional
+        name of the sessiond id file. OR the full name of the session id file (with path), by default 'sessid*'
+    funcdir : _type_, optional
+        the full path to the functional folder, by default os.getenv('FUNCTIONALS_DIR')
 
-    Raises:
-        Exception: sessid should only match one session id file.
+    Returns
+    -------
+    str list
+        a list of session names.
 
-    Returns:
-        str list: a list of session names.
-    """
+    Raises
+    ------
+    Exception
+        sessid should only match one session id file
+    """    
+    
     if not bool(funcdir):
         funcdir = os.getenv('FUNCTIONALS_DIR')
     

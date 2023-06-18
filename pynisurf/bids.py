@@ -1,5 +1,6 @@
 """
 Tools for BIDS structure.
+Created by Haiyang Jin (https://haiyangjin.github.io/en/about/)
 """
 
 import os, re, glob, shutil
@@ -11,15 +12,22 @@ import pynisurf.utilities as uti
 def bidsdir(bidsDir='', subjwc='sub-*', setdir=True):
     """Set bidsDir as a global environment "BIDS_DIR". bidsDir's sub-directory should be the BIDS folder, which saves 'sourcedata', 'derivatives', 'sub-x', etc (or some of them).
 
-    Args:
-        bidsDir (str): full path to the BIDS direcotry.
-        subjwc (str, optional): wildcard to be used to identify subject list. Defaults to 'sub-*'.
-        setdir (bool, optional): set the global environment $BIDS_DIR. Defaults to True.
+    Parameters
+    ----------
+    bidsDir : str, optional
+        full path to the BIDS direcotry, by default ''
+    subjwc : str, optional
+        wildcard to be used to identify subject list, by default 'sub-*'
+    setdir : bool, optional
+        set the global environment $BIDS_DIR, by default True
 
-    Returns:
-        bidsDir (str): full path to the BIDS direcotry.
-        bidslist (str list): a list of BIDS subjects.
-        
+    Returns
+    -------
+    str
+        full path to the BIDS direcotry
+    str list
+        a list of subject folders in `bidsDir`.
+
     Created on 2023-May-16 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
     """
     
@@ -40,18 +48,25 @@ def bidsdir(bidsDir='', subjwc='sub-*', setdir=True):
 def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
     """Convert DICOM to BIDS with dcm2bids.
 
-    Args:
-        dcmSubj (str list OR str): a list of subject folders storing DICOM files. [OR] a wildcard string to match the subject folders storing saving DICOM files.
-        bidsSubj (str list OR str, optional): a list of output BIDS subject codes (e.g., {'X01', 'X02', ...}). It needs to have the same length as dcmSubj. Default is {'01', '02', ...} depending on dcmSubj. It only makes sense to input a list of string when {dcmSubj} is also a list of str. Each string in {dcmSubj} correspond to each string in {bidsSubj}. [OR] strings to be put before {'01', '02, ...}.E.g., when bidsSubj is 'Test', the subjcode will be 'sub-Test01', 'sub-Test02'. Defaults to ''.
-        config (str, optional): the config file to deal with dicoms. Defaults to '{$BIDS_DIR}/code/bids_convert.json'.
-        isSess (boo or int, optional): If there are multiple subdir within dcmSubj dir, whether these dirctories are sessions (or runs). Default is False (i.e., runs). Note that if run folders are mistaken as session folders, each run will be saved as a separate session. No messages will be displayed for this case but you will notice it in the output. A special usage of isSess is: when isSess is not 0 and there is only one folder withi9n subdir, isSess will be used as the session code.
-        runcmd (int, optional): Whether to run the commands. Defaults to True.
+    Parameters
+    ----------
+    dcmSubj : str, str list
+        A list of subject codes/folders storing DICOM files (if `dcmSubj` is str list); OR a wildcard string to match the subject folders storing DICOM files (if `dcmSubj` is str).
+    bidsSubj : str, optional
+        A list of output BIDS subject codes (e.g., {'X01', 'X02', ...}). It needs to have the same length as `dcmSubj`. Default is {'01', '02', ...} depending on `dcmSubj`. It only makes sense to input a list of string when `dcmSubj` is also a str list. Each string in `dcmSubj` correspond to each string in `bidsSubj`. [OR] strings to be put before {'01', '02, ...}.E.g., when `bidsSubj` is 'Test', the subjcode will be 'sub-Test01', 'sub-Test02'. Defaults to ''.
+    config : str, optional
+        the config file to deal with dicoms. Defaults to '{$BIDS_DIR}/code/bids_convert.json'.
+    isSess : bool, optional
+        If there are multiple subdir within dcmSubj dir, whether these dirctories are sessions (or runs). Default is False (i.e., runs). Note that if run folders are mistaken as session folders, each run will be saved as a separate session. No messages will be displayed for this case but you will notice it in the output. A special usage of `isSess` is: when `isSess` is not 0 and there is only one folder within the directory, `isSess` will be used as the session code.
+    runcmd : bool, optional
+        whether to run the commands. Defaults to True.
 
-    Returns:
-        cmdlist (str list) dcm2bids commands.
-        status (boo vec) status of running d2bcmd.
-        
-    Created on 2023-May-29 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    Returns
+    -------
+    cmdlist : str list
+        dcm2bids commands.
+    status : boo vec
+        status of running d2bcmd. True if no error.
     """
     
     ## Deal with inputs
@@ -114,33 +129,39 @@ def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
     return (cmdlist, status)
 
 
-def fn2info(fn, secsep='_', valuesep='-', 
+def fn2info(filename, secsep='_', valuesep='-', 
             modality=['bold', 'sbref', 'epi', 'T1w', 'T2w', 
             'scans', 'events',
             'inflated', 'midthickness', 'pial', 'smoothwm', 'probseg', 
             'timeseries', 'xfm', 'boldref', 'dseg', 'mask']):
     """Collects the relevant information from the filename by section (<secstr>) and value (<valuestr>) strings.
 
-    Args:
-        fn (str): the file name to be parsed.
-        secsep (str, optional): the string to be used to separate the filename into different sections. Defaults to '_'.
-        valuesep (str, optional): the string to be used to separate each section into fieldname and value. Only the first valuestr will be used. Defaults to '-'.
-        modality (list, optional): a list of strings to be identified as 'modality'. Other strings will be identified as 'custom*'. Defaults to ['bold', 'sbref', 'epi', 'T1w', 'T2w', 'scans', 'events', 'inflated', 'midthickness', 'pial', 'smoothwm', 'probseg', 'timeseries', 'xfm', 'boldref', 'dseg', 'mask'].
+    Parameters
+    ----------
+    filename : str
+        the file name to be parsed.
+    secsep : str, optional
+        the string to be used to separate the filename into different sections. Defaults to '_'.
+    valuesep : str, optional
+        the string to be used to separate each section into fieldname and value. Only the first valuestr will be used. Defaults to '-'.
+    modality : str list, optional
+        a list of strings to be identified as `modality`. Other strings will be identified as 'custom*'. Defaults to ['bold', 'sbref', 'epi', 'T1w', 'T2w', 'scans', 'events', 'inflated', 'midthickness', 'pial', 'smoothwm', 'probseg', 'timeseries', 'xfm', 'boldref', 'dseg', 'mask'].
 
-    Returns:
-        info (dict): the information in a dict.
-        
-    Examples:
+    Returns
+    -------
+    dict
+        the filename information in a dict.
+            
+    Examples
+    --------
         info = fn2info('sub-002_TaskName_ses-001_Run-01_bold.nii.gz')
         info = fn2info('sub-S02_task-TN_run-4_space-fsnative_hemi-L_bold.func.gii')
         info = fn2info('sub-1_task-S_run-4_space-fsLR_den-91k_bold.dtseries.nii')
-        
-    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
     """
     
     # remove the path
-    fname = os.path.basename(fn)
-    # path = os.path.dirname(fn)
+    fname = os.path.basename(filename)
+    # path = os.path.dirname(filename)
     
     # strings after the first '.' are regarded as extension
     idx = len(fname) 
@@ -175,21 +196,26 @@ def fn2info(fn, secsep='_', valuesep='-',
     
 
 def info2fn(info, secsep='_', valuesep='-'):
-    """converts info_struct (can be obtained via fn2info()) into a filename (str).
+    """Converts info_struct (can be obtained via `fn2info()`) into a filename (str).
 
-    Args:
-        info (dict): the information in a dict.
-        secsep (str, optional): the string to be used to separate the filename into different sections. Defaults to '_'.
-        valuesep (str, optional): the string to be used to separate each section into fieldname and value. Only the first valuestr will be used. Defaults to '-'.
+    Parameters
+    ----------
+    info : dict
+        the information in a dict. See the output of `fn2info()`.
+    secsep : str, optional
+        the string to be used to separate the filename into different sections. Defaults to '_'.
+    valuesep : str, optional
+        the string to be used to separate each section into fieldname and value. Only the first valuestr will be used. Defaults to '-'.
 
-    Returns:
-        fn (str): the output filename.
-        
-    Examples:
+    Returns
+    -------
+    str
+        the output filename.
+    
+    Examples
+    --------
         info = fn2info('sub-002_TaskName_ses-001_Run-01_bold.nii.gz')
         fn = info2fn(info)
-        
-    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
     """
     
     # save extension
@@ -214,15 +240,19 @@ def info2fn(info, secsep='_', valuesep='-'):
 def listfile(filewc='*', subjList='sub-*', modality='func'):
     """Collect the file list for a given modality.
 
-    Args:
-        filewc (str, optional): filename wild card to be used to identify files. Defaults to '*', i.e., all files.
-        subjList (str, optional): <list str> a list of subject folders in {bidsDir}. OR <str> wildcard strings to match the subject folders via bids_dir(). Defaults to 'sub-*'. Defaults to 'sub-*'.
-        modality (str, optional): the moduality folders ('func', 'anat', 'fmap', ...). Defaults to 'func'.
+    Parameters
+    ----------
+    filewc : str, optional
+        filename wild card to be used to identify files. Defaults to '*', i.e., all files.
+    subjList : str OR str list, optional
+        <list str> a list of subject folders in `bidsDir`. OR <str> wildcard strings to match the subject folders via `bids_dir()`. Defaults to 'sub-*'.
+    modality : str, optional
+        the moduality folders ('func', 'anat', 'fmap', ...). Defaults to 'func'.
 
-    Returns:
-        list: a list of identified files.
-    
-    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    Returns
+    -------
+    list
+        a list of identified files.
     """    
     
     if isinstance(subjList, str): 
@@ -248,18 +278,23 @@ def listfile(filewc='*', subjList='sub-*', modality='func'):
     
    
 def fixfmap(intendList='*_bold.nii.gz', subjList='sub-*', fmapwc='*.json'):
-    """Fix the IntendedFor field in fmap json files. (Probably not useful anymore.)
+    """Fix the IntendedFor field in fmap json files. (Probably not useful anymore. It seems that this issue has been fixed in dcm2bids)
 
-    Args:
-        intendList (str, optional): <list str> a list of files to be assigned to "intendedFor" of fmap json files. OR <str> wildcard strings to identify the files to be assigned to "intendedFor" of fmap json files. Defaults to '*_bold.nii.gz'.
-        subjList (str, optional): <list str> a list of subject folders in {bidsDir}. OR <str> wildcard strings to match the subject folders via bids_dir(). Defaults to 'sub-*'.
-        fmapwc (str, optional): wildcard for the fmap json files, for which the intendList will be added to. Defaults to '*.json', i.e., all json files in fmap/ will be updated. 
+    Parameters
+    ----------
+    intendList : str, optional
+        <list str> a list of files to be assigned to "intendedFor" of fmap json files. OR <str> wildcard strings to identify the files to be assigned to "intendedFor" of fmap json files. Defaults to '*_bold.nii.gz'.
+    subjList : str, optional
+        <list str> a list of subject folders in `bidsDir`. OR <str> wildcard strings to match the subject folders via `bids_dir()`. Defaults to 'sub-*'.
+    fmapwc : str, optional
+        wildcard for the fmap json files, for which the intendList will be added to. Defaults to '*.json', i.e., all json files in fmap/ will be updated.
 
-    Raises:
-        Exception: sanity check for session information. Data in the same folder should be from the same session.
-        
-    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
-    """    
+    Raises
+    ------
+    Exception
+        sanity check for session information. Data in the same folder should be from the same session.
+    """   
+     
     # make sure fmapwc ends with '.json'
     if not fmapwc.endswith('.json'): fmapwc = fmapwc + '.json'
     
@@ -302,12 +337,14 @@ def fixfmap(intendList='*_bold.nii.gz', subjList='sub-*', fmapwc='*.json'):
 def fixfunc(taskName, subjList='sub-*', taskwc='*.json'):
     """Fix the TaskName field in func json files.
 
-    Args:
-        taskName (str): task name to be added to the files identified by {taskStr}.
-        subjList (str, optional): <list str> a list of subject folders in {bidsDir}. OR <str> wildcard strings to match the subject folders via bids_dir(). Defaults to 'sub-*'.
-        taskwc (str, optional): wildcard strings to identify a list of func runs, for which 'TaskName' will be added to their json files. Defaults to '*.json' and then all func files are treated as one task. The name will be {taskName}.
-    
-    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    Parameters
+    ----------
+    taskName : str
+        task name to be added to the files identified by `taskName`.
+    subjList : str, optional
+        `list str` a list of subject folders in `bidsDir`. OR `str` wildcard strings to match the subject folders via `bids_dir()`. Defaults to 'sub-*'.
+    taskwc : str, optional
+        wildcard strings to identify a list of func runs, for which `TaskName` will be added to their json files. Defaults to '*.json' and then all func files are treated as one task. The name will be `taskName`.
     """    
     
     # make sure taskwc ends with '.json'
@@ -328,20 +365,26 @@ def fixfunc(taskName, subjList='sub-*', taskwc='*.json'):
             json.dump(val, json_out, indent=4)
     
      
-def cpevent(subjCode, eventwd='', runwd='*_bold.nii.gz', ses=''):   
+def cpevent(subjCode, eventwd='', runwd='*_bold.nii.gz', ses=''):  
     """Copy event files to the BIDS folder.
 
-    Args:
-        subjCode (str): subject code in {bidsDir}.
-        eventwd (str OR str list, optional): full path wildcards to be used to identify the event files to be copied. Defaults to ''.
-        runwd (str OR str list, optional):wildcards to be used to identify the functional runs (BOLD), whose names will be used as the new names for the event files. Defaults to '*_bold.nii.gz'.
-        ses (str, optional): the session name. Default to '', i.e., no session informaiton/folder is available.
+    Parameters
+    ----------
+    subjCode : str
+        subject code in `bidsDir`.
+    eventwd : str, optional
+        wildcard strings to be used to identify the event files to be copied. Defaults to ''.
+    runwd : str, optional
+        wildcard strings to be used to identify the functional runs (BOLD), whose names will be used as the new names for the event files. Defaults to '*_bold.nii.gz'.
+    ses : str, optional
+        the session name. Default to '', i.e., no session informaiton/folder is available.
 
-    Returns:
-        srclist: a list of srouce files.
-        dstlist: a list of destination files.
-        
-    Created on 2023-May-30 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    Returns
+    -------
+    str list
+        a list of srouce files.
+    str list
+         a list of destination files.
     """
     
     ## Deal with inputs
@@ -417,11 +460,11 @@ def dupsbref(subjCode, sbrefwc='*sbref.nii.gz', boldwc='*_bold.nii.gz', rmsrc=Fa
 def mkignore(ignorelist=['tmp_dcm2bids/','tmp/','code/']):
     """Make .bidsignore file in the BIDS folder.
 
-    Args:
-        ignorelist (list, optional): directories or files to be ignored. Defaults to ['tmp_dcm2bids/','tmp/','code/'].
-        
-    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/) 
-    """
+    Parameters
+    ----------
+    ignorelist : list, optional
+        directories or files to be ignored, by default ['tmp_dcm2bids/','tmp/','code/']
+    """    
     
     # get bids dir
     bidsDir=bidsdir(setdir=False)[0]
@@ -432,14 +475,16 @@ def mkignore(ignorelist=['tmp_dcm2bids/','tmp/','code/']):
 def mktsv(content='sub-*', fname='participants.tsv', header='participant_id'):
     """Make participants.tsv file in the BIDS folder.
 
-    Args:
-        content (str, optional): <list str> a list of subject folders in {bidsDir}. OR <str> wildcard strings to match the subject folders via bids_dir(). Defaults to 'sub-*'.
-        fname (str, optional): the name of the tsv file. Defaults to 'participants.tsv'.
-        header (str, optional): the header of the tsv file. Defaults to 'participant_id'.
-        
-    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    Parameters
+    ----------
+    content : str, optional
+        <list str> a list of subject folders in `bidsDir`. OR <str> wildcard strings to match the subject folders via `bids_dir()`. Defaults to 'sub-*'.
+    fname : str, optional
+        the name of the tsv file. Defaults to 'participants.tsv'.
+    header : str, optional
+        the header of the tsv file. Defaults to 'participant_id'.
     """
-    
+        
     # get bids dir
     bidsDir=bidsdir(setdir=False)[0]
     # get list of subjects if content is a string
@@ -455,8 +500,6 @@ def mktsv(content='sub-*', fname='participants.tsv', header='participant_id'):
 
 def mkreadme():
     """Make README.md file in the BIDS folder.
-    
-    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
     """
     
     # get bids dir
@@ -467,11 +510,11 @@ def mkreadme():
     
 def scaffold(force=False):
     """Make .bidsignore, participants.tsv, and README.md files in the BIDS folder.
-    
-    Args:
-        force (bool, optional): whether to overwrite the existing files. Defaults to False.
-    
-    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+
+    Parameters
+    ----------
+    force : bool, optional
+        whether to overwrite the existing files. Defaults to False.
     """
     
     # get bids dir
@@ -488,13 +531,15 @@ def scaffold(force=False):
 def validator(runcmd=True):
     """Run bids_validator. This function needs Docker.
 
-    Args:
-        runcmd (bool, optional): whether to run the command. Defaults to True.
+    Parameters
+    ----------
+    runcmd : bool, optional
+        whether to run the command, by default True
 
-    Returns:
-        int: status of running the command. 0 if no error.
-        
-    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    Returns
+    -------
+    int
+        status of running the command. 0 if no error.
     """
     
     # get bids dir
@@ -508,28 +553,44 @@ def validator(runcmd=True):
 def fmriprep(subjCode, **kwargs):
     """Run fmriprep for one subject. This function needs Docker.
 
-    Args:
-        subjCode (str):subject code in `bidsDir`.
+    Parameters
+    ----------
+    subjCode : str
+        subject code in `bidsDir`.
         
-        fslicense (str, optional): path to FreeSurfer license key file. Defaults to '$HOME/Documents/license.txt'.
-        outspace (str, optional): the name of the output space. Defaults to 'fsnative fsaverage T1w MNI152NLin2009cAsym'.
-        cifti (str, optional): the resolution of the output CIFTI file. Defaults to ''.
-        nthreads (int, optional): number of threads per-process. Defaults to 8.
-        maxnthreads (int, optional): maximum number of threads per-process. Defaults to 8.
-        wd (str, optional): working dicrectory. Defaults to a folder ending with '_work' at the same level with `bidsDir`. For example, if `bidsDir` is `path/to/bids`, the default `wd` will be `path/to/bids_work`.
-        ignore (str, optional): steps to be ignored in fmriprep, e.g., {fieldmaps,slicetiming,sbref}. Defaults to ''.
-        runcmd (bool, optional): whether to run the command. Defaults to True.
-        extracmd (str, optional): extra command line arguments. Defaults to '--no-tty'.
-        pathtofmriprep (str, optional): path to fmriprep. Defaults to ''.
+    Keyword Arguments
+    -----------------
+    fslicense : str, optional
+        path to FreeSurfer license key file. Defaults to '$HOME/Documents/license.txt'.
+    outspace : str, optional
+        the name of the output space. Defaults to 'fsnative fsaverage T1w MNI152NLin2009cAsym'.
+    cifti : str, optional
+        the resolution of the output CIFTI file. Defaults to ''.
+    nthreads : int, optional
+        number of threads per-process. Defaults to 8.
+    maxnthreads : int, optional
+        maximum number of threads per-process. Defaults to 8.
+    wd : str, optional
+        working dicrectory. Defaults to a folder ending with '_work' at the same level with `bidsDir`. For example, if `bidsDir` is `path/to/bids`, the default `wd` will be `path/to/bids_work`.
+    ignore : str, optional
+        steps to be ignored in fmriprep, e.g., {fieldmaps,slicetiming,sbref}. Defaults to ''.
+    runcmd : bool, optional
+        whether to run the command. Defaults to True.
+    extracmd : str, optional
+        extra command line arguments. Defaults to '--no-tty'.
+    pathtofmriprep : str, optional
+        path to fmriprep. Defaults to ''.
 
-    Returns:
-        fpcmd (str): the full fmriprep command line.
-        status (int): the status of the fmriprep command.
-        
-    Examples:
-        fmriprep('sub-01')
+    Returns
+    -------
+    str
+        the full fmriprep command.
+    int 
+        the status of the fmriprep command. 0 if no error.
     
-    Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/)
+    Examples
+    --------
+        fmriprep('sub-01')
     """
     
     defaultKwargs = {'fslicense':'$HOME/Documents/license.txt', 

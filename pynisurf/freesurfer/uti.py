@@ -8,23 +8,25 @@ from itertools import compress
 
 # convert/extract information
 def tocontrast(fn_list, separator='.', con_sign='-vs-'):
-    """
-    This function obtains the contrast name from the strings (e.g., a label 
+    """Obtains the contrast name from the strings (e.g., a label 
     name when the label name is something like roi.lh.f13.f-vs-o.*label). It 
     will obtain the strings around '-vs-'.
 
-    Args:
-        fn_list (str list): a list of strings (e.g., label names).
-        separator (str, optional): delimiter used to parse the fnList into 
-            multiple parts and contrast name will be one of the strings. 
-            Defaults to '.', which is for obtaining contrast from label name. 
-            'os.sep' can be used to obtain contrast name from a path.
-        con_sign (str, optional): contrast sign, i.e., the unique strings in
-            the contrast names. Defaults to '-vs-'.
+    Parameters
+    ----------
+    fn_list : str list
+        a list of strings (e.g., label names).
+    separator : str, optional
+        delimiter used to parse the fnList into multiple parts and contrast name will be one of the strings. Defaults to '.', which is for obtaining contrast from label name. 'os.sep' can be used to obtain contrast name from a path.
+    con_sign : str, optional
+        contrast sign, i.e., the unique strings in the contrast names, by default '-vs-'
 
-    Returns:
-        str list: a list of contrast names.
-    """
+    Returns
+    -------
+    str list
+        a list of contrast names
+    """    
+
     # split the fn_list by separator
     fn_sep = [s.split(separator) for s in fn_list]
     # only keep the part matching con_sign
@@ -34,17 +36,21 @@ def tocontrast(fn_list, separator='.', con_sign='-vs-'):
     
 
 def _tohemi(filename, fn_only=True):
-    """
-    This function determine the hemisphere based on the filename.
+    """This function determine the hemisphere based on the filename.
 
-    Args:
-        filename (str): a filename to be checked.
-        fn_only (bool, optional): whether only check the filename; False:
-            also check the path. Defaults to True.
+    Parameters
+    ----------
+    filename : str
+        a filename to be checked.
+    fn_only : bool, optional
+        whether only check the filename; False: also check the path. Defaults to True.
 
-    Returns:
-        str: the hemi information.
-    """
+    Returns
+    -------
+    str
+        the hemi information
+    """    
+    
     hemi_bool = [False, False]
     
     if os.sep in filename and fn_only:
@@ -67,18 +73,22 @@ def _tohemi(filename, fn_only=True):
 
 
 def tohemi(fn_list, fn_only=True):
-    """
-    This function determine the hemispheres based on the filenames (if 'lh'
+    """This function determine the hemispheres based on the filenames (if 'lh'
     or 'rh' is included in the filename).
 
-    Args:
-        fn_list (str list): a list of filenames.
-        fn_only (bool, optional):  whether only check the filename; False:
-            also check the path. Defaults to True.
+    Parameters
+    ----------
+    fn_list : str list
+        a list of filenames.
+    fn_only : bool, optional
+        whether only check the filename; False: also check the path. Defaults to True.
 
-    Returns:
-        str: the hemi information.
-    """
+    Returns
+    -------
+    str
+        the hemi information.
+    """    
+
     hemis = [_tohemi(x, fn_only) for x in fn_list]
     
     if len(set(hemis)) > 1:
@@ -89,15 +99,19 @@ def tohemi(fn_list, fn_only=True):
 
     
 def tosig(fn_list):
-    """
-    This function identify the significance p-value from the filename.
+    """This function identify the significance p-value from the filename.
 
-    Args:
-        fn_list (str): a list of filenames.
+    Parameters
+    ----------
+    fn_list : str
+        a list of filenames.
 
-    Returns:
-        float: the p-value in FreeSurfer.
-    """
+    Returns
+    -------
+    float
+        the p-value in FreeSurfer.
+    """    
+
     if isinstance(fn_list, str): # convert to list if it is not
         fn_list = [fn_list]
             
@@ -114,22 +128,23 @@ def tosig(fn_list):
         
 
 def totemplate(ana_list, patterns=['fsaverage', 'self'], default_str='unknown'):
-    """
-    This functions tries to identify the template used in the filename. By 
-    default, it will identify {'fsaverage', 'self'}. This function just to
-    test if the strings (e.g., 'fsaverage') are contained in the filenames.
+    """This functions tries to identify the template used in the filename. By default, it will identify {'fsaverage', 'self'}. This function just to test if the strings (e.g., 'fsaverage') are contained in the filenames.
 
-    Args:
-        ana_list (str list): a list of strings to be checked.
-        patterns (list, optional): the pattern strings. Defaults to ['fsaverage', 'self'].
-        default_str (str, optional): the default out strings if no patterns are
-            identified in filenames. Defaults to 'unknown'.
+    Parameters
+    ----------
+    ana_list : str list
+        a list of strings to be checked.
+    patterns : list, optional
+        the pattern strings, by default ['fsaverage', 'self']
+    default_str : str, optional
+        the default out strings if no patterns are identified in filenames, by default 'unknown'
 
-    Returns:
-        [str list]: the templates for each filename. 'unkonwn' denotes
-            none of the patterns were found in the filename. 'multiple'  
-            denotes at least two of the patterns were found in the filename.
-    """
+    Returns
+    -------
+    str list
+        the templates for each filename. 'unkonwn' denotes none of the patterns were found in the filename. 'multiple' denotes at least two of the patterns were found in the filename.
+    """    
+
     if isinstance(ana_list, str):
         ana_list = [ana_list]
 
@@ -149,17 +164,21 @@ def totemplate(ana_list, patterns=['fsaverage', 'self'], default_str='unknown'):
 
 
 def ana2con(ana_list, func_path=os.getenv('FUNCTIONALS_DIR')):
-    """
-    This function reads the contrast names within the analysis folders.
+    """This function reads the contrast names within the analysis folders.
 
-    Args:
-        ana_list (str list): list of analysis names.
-        func_path (str, optional): path to functional folder. Defaults 
-            to os.getenv('FUNCTIONALS_DIR').
+    Parameters
+    ----------
+    ana_list : str list
+        list of analysis names.
+    func_path : _type_, optional
+        path to functional folder. Defaults to os.getenv('FUNCTIONALS_DIR').
 
-    Returns:
-        str list: list of contrast names.
-    """
+    Returns
+    -------
+    str list
+        list of contrast names.
+    """    
+
     if not bool(func_path):
         func_path = os.getenv('FUNCTIONALS_DIR')
     
@@ -176,12 +195,17 @@ def ana2con(ana_list, func_path=os.getenv('FUNCTIONALS_DIR')):
 def colors(color):
     """This function generates default rgb colors.
 
-    Args:
-        color (int list): which colors (rows) in 'colors' to be output.
+    Parameters
+    ----------
+    color : int list
+        which colors (rows) in 'colors' to be output.
 
-    Returns:
-        list: nested list of colors
-    """
+    Returns
+    -------
+    list
+        nested list of colors
+    """    
+
     clr = [
         [1, 1, 1], # white
         [1, 1, 0], # yellow
