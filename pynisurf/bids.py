@@ -43,7 +43,7 @@ def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
     Args:
         dcmSubj (str list OR str): a list of subject folders storing DICOM files. [OR] a wildcard string to match the subject folders storing saving DICOM files.
         bidsSubj (str list OR str, optional): a list of output BIDS subject codes (e.g., {'X01', 'X02', ...}). It needs to have the same length as dcmSubj. Default is {'01', '02', ...} depending on dcmSubj. It only makes sense to input a list of string when {dcmSubj} is also a list of str. Each string in {dcmSubj} correspond to each string in {bidsSubj}. [OR] strings to be put before {'01', '02, ...}.E.g., when bidsSubj is 'Test', the subjcode will be 'sub-Test01', 'sub-Test02'. Defaults to ''.
-        config (str, optional): the config file to deal with dicoms. Defaults to '{$BIDS_DIR}/codes/bids_convert.json'.
+        config (str, optional): the config file to deal with dicoms. Defaults to '{$BIDS_DIR}/code/bids_convert.json'.
         isSess (boo or int, optional): If there are multiple subdir within dcmSubj dir, whether these dirctories are sessions (or runs). Default is False (i.e., runs). Note that if run folders are mistaken as session folders, each run will be saved as a separate session. No messages will be displayed for this case but you will notice it in the output. A special usage of isSess is: when isSess is not 0 and there is only one folder withi9n subdir, isSess will be used as the session code.
         runcmd (int, optional): Whether to run the commands. Defaults to True.
 
@@ -58,7 +58,7 @@ def dcm2bids(dcmSubj, bidsSubj='', config='', isSess=False, runcmd=True):
     bidsDir = bidsdir(setdir=False)[0]
     
     if not bool(config):
-        config=os.path.join(bidsDir, 'codes', 'bids_convert.json')
+        config=os.path.join(bidsDir, 'code', 'bids_convert.json')
     # make sure the config file exist
     assert os.path.isfile(config), (f'Cannot find the config file:\n%s', config)
     
@@ -355,8 +355,8 @@ def cpevent(subjCode, eventwd='', runwd='*_bold.nii.gz', ses=''):
     assert nwd==len(runwd), (f'The length of "eventwd" (%d) and "runwd" (%d) is not the same.', nwd, len(runwd))
         
     # set session info
-    if isinstance(ses, int): ses = str(int)
-    if not ses.startswith('ses-'): ses = 'ses-'+ses
+    if isinstance(ses, int): ses = str(ses)
+    if isinstance(ses, str) & (not ses.startswith('ses-')): ses = 'ses-'+ses
 
     # Find and copy files
     srclist = []
@@ -364,12 +364,12 @@ def cpevent(subjCode, eventwd='', runwd='*_bold.nii.gz', ses=''):
     for iwd in range(nwd):
         
         # source files
-        src = glob.glob(eventwd[iwd])
-        assert src is None, (f'Cannot find %s in pwd.') % (eventwd[iwd])
+        src = sorted(glob.glob(eventwd[iwd]))
+        assert bool(src), (f'Cannot find %s in pwd.') % (eventwd[iwd])
         
         # destination files
-        runs = glob.glob(os.path.join(bidsDir, subjCode, ses, 'func', runwd[iwd]))
-        assert runs is None, (f'Cannot find %s in %s.') % (runwd[iwd], os.path.join(bidsDir, subjCode, ses, 'func'))
+        runs = sorted(glob.glob(os.path.join(bidsDir, subjCode, ses, 'func', runwd[iwd])))
+        assert bool(runs), (f'Cannot find %s in %s.') % (runwd[iwd], os.path.join(bidsDir, subjCode, ses, 'func'))
         dst = [r.replace('_bold.nii.gz', '_events.tsv') for r in runs]
         
         # copy files
@@ -382,11 +382,43 @@ def cpevent(subjCode, eventwd='', runwd='*_bold.nii.gz', ses=''):
     return srclist, dstlist
 
 
-def mkignore(ignorelist=['tmp_dcm2bids/','tmp/','codes/']):
+def dupsbref(subjCode, sbrefwc='*sbref.nii.gz', boldwc='*_bold.nii.gz', rmsrc=False):
+    """Duplicate the single-band reference for each of the matched bold runs.
+
+    Parameters
+    ----------
+    subjCode : str list, str
+        a list of subject folders in `bidsDir`. OR <str> wildcard strings to match the subject folders via `bids_dir()`. 
+    sbrefwc : str, optional
+        wildcard strings to identify the single-band reference files.
+    boldwc : str, optional
+        wildcard strings to identify the functional runs (BOLD).
+    rmsrc : bool, optional
+        whether to remove the original sbref files. Defaults to False.
+    """
+    
+    # find all sb refs for this subject
+    sbrefs = listfile(sbrefwc, subjCode, 'func')
+    
+    # duplicate the sbref for each bold run
+    for sbref in sbrefs:
+        # find the bold runs
+        bold = glob.glob(os.path.join(os.path.dirname(sbref), boldwc))
+        assert bool(bold), (f'Cannot find any BOLD files (%s) matching the single-band reference (%s).') % (boldwc, sbref)
+        
+        # repeat the sbref for each bold run
+        [shutil.copyfile(sbref, b.replace('_bold.nii.gz', '_sbref.nii.gz')) for b in bold]
+            
+        # remove the sbref if needed
+        if rmsrc: 
+            os.remove(sbref)
+    
+
+def mkignore(ignorelist=['tmp_dcm2bids/','tmp/','code/']):
     """Make .bidsignore file in the BIDS folder.
 
     Args:
-        ignorelist (list, optional): directories or files to be ignored. Defaults to ['tmp_dcm2bids/','tmp/','codes/'].
+        ignorelist (list, optional): directories or files to be ignored. Defaults to ['tmp_dcm2bids/','tmp/','code/'].
         
     Created on 2023-May-31 by Haiyang Jin (https://haiyangjin.github.io/en/about/) 
     """
@@ -433,7 +465,7 @@ def mkreadme():
     shutil.copyfile(os.path.join(os.path.dirname(__file__), 'resources', 'README.md'), os.path.join(bidsDir, 'README.md'))
     
     
-def mkbidsfiles(force=False):
+def scaffold(force=False):
     """Make .bidsignore, participants.tsv, and README.md files in the BIDS folder.
     
     Args:
@@ -468,7 +500,7 @@ def validator(runcmd=True):
     # get bids dir
     bidsDir=bidsdir(setdir=False)[0]
     # make the command for bids_validator
-    cmd = 'docker run -ti --rm -v %s:/data:ro bids/validator /data' % bidsDir
+    cmd = 'docker run --rm -v %s:/data:ro bids/validator /data' % bidsDir
     # run the command
     return uti.runcmd(cmd, runcmd=runcmd)[1]
     
@@ -477,14 +509,14 @@ def fmriprep(subjCode, **kwargs):
     """Run fmriprep for one subject. This function needs Docker.
 
     Args:
-        subjCode (str):subject code in {bidsDir}.
+        subjCode (str):subject code in `bidsDir`.
         
         fslicense (str, optional): path to FreeSurfer license key file. Defaults to '$HOME/Documents/license.txt'.
         outspace (str, optional): the name of the output space. Defaults to 'fsnative fsaverage T1w MNI152NLin2009cAsym'.
         cifti (str, optional): the resolution of the output CIFTI file. Defaults to ''.
         nthreads (int, optional): number of threads per-process. Defaults to 8.
         maxnthreads (int, optional): maximum number of threads per-process. Defaults to 8.
-        wd (str, optional): working dicrectory. Defaults to ''.
+        wd (str, optional): working dicrectory. Defaults to a folder ending with '_work' at the same level with `bidsDir`. For example, if `bidsDir` is `path/to/bids`, the default `wd` will be `path/to/bids_work`.
         ignore (str, optional): steps to be ignored in fmriprep, e.g., {fieldmaps,slicetiming,sbref}. Defaults to ''.
         runcmd (bool, optional): whether to run the command. Defaults to True.
         extracmd (str, optional): extra command line arguments. Defaults to '--no-tty'.
@@ -508,7 +540,7 @@ def fmriprep(subjCode, **kwargs):
                      'wd': '',         # working dicrectory
                      'ignore': '',     # {fieldmaps,slicetiming,sbref}
                      'runcmd': True,
-                     'extracmd':'--no-tty', # not use TTY
+                     'extracmd':'--no-tty', # not use TTY --use-aroma --ignore slicetiming 
                      'pathtofmriprep':''}
     kwargs = {**defaultKwargs, **kwargs}
     
@@ -537,7 +569,7 @@ def fmriprep(subjCode, **kwargs):
         extracmd += ['--omp-nthreads %d' % kwargs['maxnthreads']]
         
     if not bool(kwargs['wd']):
-        wd = os.path.join(bidsDir, '..', 'work')
+        wd = os.path.join(os.path.dirname(bidsDir), os.path.basename(bidsDir)+'_work')
     else:
         wd = kwargs['wd']
     if not os.path.isdir(wd): os.mkdir(wd)
