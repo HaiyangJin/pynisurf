@@ -5,16 +5,16 @@ Tools typically also involve functional data.
 import os
 import re
 
-def funcdir(funcdir=os.getenv('FUNCTIONALS_DIR'), str_pattern='',setdir=True):
+def funcdir(func_dir=os.getenv('FUNCTIONALS_DIR'), str_pattern=None, set_dir=True):
     """Set the FUNCTIONAL_DIR environment variable and return the path
 
     Parameters
     ----------
-    funcdir : str, optional
+    func_dir : str, optional
         the path to functional data. This path will also be saved as $FUNCTIONALS_DIR., by default os.getenv('FUNCTIONALS_DIR')
     str_pattern : str, optional
-        the string pattern for session names. It will be used to identify all the sessions. E.g., it can be "Face*" (without quotes)., by default ''
-    setdir : bool, optional
+        the string pattern for session names. It will be used to identify all the sessions. E.g., it can be "Face*" (without quotes)., by default None
+    set_dir : bool, optional
         whether to set the global environment, by default True
 
     Returns
@@ -25,27 +25,27 @@ def funcdir(funcdir=os.getenv('FUNCTIONALS_DIR'), str_pattern='',setdir=True):
         a list of session codes.
     """    
 
-    if not bool(funcdir):
-        funcdir = os.path.join(os.getenv('SUBJECTS_DIR'), '..', 'functionals')
+    if not bool(func_dir):
+        func_dir = os.path.join(os.getenv('SUBJECTS_DIR'), '..', 'functionals')
         
-    if setdir:
+    if set_dir:
         # set the environment variable of FUNCTIONALS_DIR
-        os.environ['FUNCTIONALS_DIR'] = funcdir
+        os.environ['FUNCTIONALS_DIR'] = func_dir
     
     # obtain the session codes
-    sess_list = [f for f in os.listdir(funcdir) if re.match(str_pattern, f) and '.' not in f]
+    sess_list = [f for f in os.listdir(func_dir) if re.match(str_pattern, f) and '.' not in f]
 
-    return funcdir, sess_list
+    return func_dir, sess_list
     
 
-def sesslist(sessid='sessid*', funcdir = os.getenv('FUNCTIONALS_DIR')):
+def sesslist(sessid='sessid*', func_dir = os.getenv('FUNCTIONALS_DIR')):
     """This function reads the session ID file and output the session list.
 
     Parameters
     ----------
     sessid : str, optional
         name of the sessiond id file. OR the full name of the session id file (with path), by default 'sessid*'
-    funcdir : _type_, optional
+    func_dir : _type_, optional
         the full path to the functional folder, by default os.getenv('FUNCTIONALS_DIR')
 
     Returns
@@ -59,11 +59,11 @@ def sesslist(sessid='sessid*', funcdir = os.getenv('FUNCTIONALS_DIR')):
         sessid should only match one session id file
     """    
     
-    if not bool(funcdir):
-        funcdir = os.getenv('FUNCTIONALS_DIR')
+    if not bool(func_dir):
+        func_dir = os.getenv('FUNCTIONALS_DIR')
     
     if os.sep not in sessid:
-        sessid_list = [f for f in os.listdir(funcdir) if re.match(sessid, f) and '.' not in f]
+        sessid_list = [f for f in os.listdir(func_dir) if re.match(sessid, f) and '.' not in f]
         n_sessid = len(sessid_list)
     
         if n_sessid > 1:
@@ -72,14 +72,14 @@ def sesslist(sessid='sessid*', funcdir = os.getenv('FUNCTIONALS_DIR')):
             raise Exception(f'Cannot find the session id file ({sessid}).')
         else:
             # create the session id filename (with path)
-            sessFilename = os.path.join(funcdir, sessid_list[0])
+            sess_fname = os.path.join(func_dir, sessid_list[0])
     else:
         # create the session id filename (with path)
-        sessFilename = sessid
+        sess_fname = sessid
     
-    assert bool(dir(sessFilename)), f'Cannot find the sessiond id file ({sessFilename}).'
+    assert bool(dir(sess_fname)), f'Cannot find the sessiond id file ({sess_fname}).'
     
     # read the session id file
-    sess_list = open(sessFilename, 'r').read().split('\n')
+    sess_list = open(sess_fname, 'r').read().split('\n')
     
     return sess_list

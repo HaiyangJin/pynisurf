@@ -6,99 +6,95 @@ import pynisurf.bids as bids
             
 class project:
 
-    def __init__(self, fsdir, bidsdir='', fpdir ='', subjdir='', funcdir='', subjwc='sub-*', legacy=True):
-        """Create a project and store the relevant information.
+    def __init__(self, fs_dir, bids_dir=None, subj_wc='sub-*', isfped=False, legacy=True):
+        """Create a project: set up FreeSurfer and make some global environment variables (e.g., `$BIDS_DIR`, `$SUBJECTS_DIR`).
 
         Parameters
         ----------
-        fsdir : str
-            the FreeSurfer directory (where FreeSurfer is installed)
-        bidsdir : str, optional
-            directory to the BIDS directory, i.e., the direcotry stores the dcm2bids output. by default '' (will not set up this directory)
-        fpdir : str, optional
-            directory to the fMRIPrep output, by default '' (will not set up this directory)
-        subjdir : str, optional
-            directory to the SUBJECTS_DIR in FreeSurfer, by default '<bidsdir>/derivatives/freesurfer'
-        funcdir : str, optional
-            directory to the FUNCTIONALS_DIR in FreeSurfer, by default <bidsdir>/derivatives/functionals'
-        subjwc : str, optional
+        fs_dir : str
+            FreeSurfer directory (where FreeSurfer is installed)
+        bids_dir : str, optional
+            directory to the BIDS directory, i.e., the direcotry stores the dcm2bids output. by default None (will not set up this directory)
+        subj_wc : str, optional
             wildcard to identify subject list, by default 'sub-*'
+        isfped : bool, optional
+            whether fmriPrep has been conducted. Default to False.
         legacy : bool, optional
             whether the fMRIPrep output is in legacy format (more see https://fmriprep.org/en/stable/outputs.html#legacy-layout), by default True
         """
 
-        fs.setup(fsdir) # setup FreeSurfer
+        fs.setup(fs_dir) # setup FreeSurfer
         self.fsversion = fs.version(toprint=False)
         
         # set up BIDS
         self.legacy = legacy
-        if bool(bidsdir) and os.path.isdir(bidsdir):
-            self.setbidsdir(bidsdir, subjwc='sub-*')
-            self.setfpdir(fpdir)
+        self.setbidsdir(bids_dir, subj_wc='sub-*')
+        self.setfpdir(bids_dir, subj_wc, set_dir=isfped, legacy=legacy)
         
-        # set up SUBJECTS_DIR and FUNCTIONALS_DIR
-        if not bool(subjdir) and bool(bidsdir):
-            tmpdir = '' if legacy else 'sourcedata'
-            subjdir = os.path.join(bidsdir, 'derivatives', tmpdir, 'freesurfer')
-        if os.path.isdir(subjdir):
-            self.setsubjdir(subjdir, subjwc)
-        # self.subjdir, self.subjlist = fs.subjdir(subjdir, subjwc)
+        # set up SUBJECTS_DIR if needed 
+        tmpdir = '' if legacy else 'sourcedata'
+        subj_dir = os.path.join(bids_dir, 'derivatives', tmpdir, 'freesurfer')
+        self.setsubjdir(subj_dir, subj_wc)
         
-        # (to be updated later)
-        if bool(funcdir):
-            funcdir = os.path.join(self.bidsdir, 'derivatives', 'functionals')
-        if os.path.isdir(funcdir):
-            self.setfuncdir(funcdir, subjwc)
-        # self.funcdir, self.funclist = fs.funcdir(funcdir, subjwc)
+        # set up FUNCTIONALS_DIR if needed
+        func_dir = os.path.join(self.bidsdir, 'derivatives', 'functionals')
+        self.setfuncdir(func_dir, subj_wc)
+
         
-    def setbidsdir(self, bidsdir, subjwc='sub-*'):
+    def setbidsdir(self, bids_dir, subj_wc='sub-*'):
         """Set BIDS directory and update the subject list.
 
         Parameters
         ----------
-        bidsdir : str
-            directory to the BIDS directory, i.e., the direcotry stores the dcm2bids output. by default '' (will not set up this directory)
-        subjwc : str, optional
+        bids_dir : str
+            directory to the BIDS directory, i.e., the direcotry stores the dcm2bids output. by default None (will not set up this directory)
+        subj_wc : str, optional
             wildcard to identify subject list, by default 'sub-*'
         """
-        self.bidsdir, self.bidslist = bids.bidsdir(bidsdir, subjwc)
-        self.sourcedata = os.path.join(self.bidsdir, 'sourcedata')
+        if os.path.isdir(bids_dir):
+            self.bidsdir, self.bidslist = bids.bidsdir(bids_dir, subj_wc, setdir=True)
+
             
-    def setsubjdir(self, subjdir, subjwc='sub-*'):
+    def setsubjdir(self, subj_dir, subj_wc='sub-*'):
         """Set SUBJECTS_DIR and update the subject list.
 
         Parameters
         ----------
-        subjdir : str
+        subj_dir : str
             directory to the SUBJECTS_DIR in FreeSurfer.
-        subjwc : str, optional
+        subj_wc : str, optional
             wildcard to identify subject list, by default 'sub-*'
         """
-        self.subjdir, self.subjlist = fs.subjdir(subjdir, subjwc)
+        if os.path.isdir(subj_dir):
+            self.subjdir, self.subjlist = fs.subjdir(subj_dir, subj_wc)
     
-    def setfuncdir(self, funcdir, subjwc='sub-*'):
+    
+    def setfuncdir(self, func_dir, subj_wc='sub-*'):
         """Set FUNCTIONALS_DIR and update the subject list.
 
         Parameters
         ----------
-        funcdir : str
+        func_dir : str
             directory to the FUNCTIONALS_DIR in FreeSurfer.
-        subjwc : str, optional
+        subj_wc : str, optional
             wildcard to identify subject list, by default 'sub-*'
         """
-        self.funcdir, self.funclist = fs.funcdir(funcdir, subjwc)
+        if os.path.isdir(func_dir):
+            self.funcdir, self.funclist = fs.funcdir(func_dir, subj_wc)
         
-    def setfpdir(self, fpdir=''):
+    def setfpdir(self, fp_dir, subj_wc='sub-*', set_dir=True, legacy=True):
         """Set the directory to the fMRIPrep output.
 
         Parameters
         ----------
-        fpdir : str, optional
-            directory to the fMRIPrep output, by default '' (will not set up this directory)
+        fp_dir : str, optional
+            directory to the fMRIPrep output, by default None (will not set up this directory)
+        subj_wc : str, optional
+            wildcard to identify subject list, by default 'sub-*'
+        set_dir : bool, optional
+            whether to set up the directory, by default True
+        legacy : bool, optional
         """
-        if bool(fpdir):
-            self.fpidr = fpdir
-        elif not bool(self.bidsdir):
-            self.fpdir = os.path.join(self.bidsdir, 'derivatives', 'fmriprep')
-        
+        if os.path.isdir(fp_dir):
+            self.fpdir, self.fplist = bids.fpdir(fp_dir, subj_wc, set_dir=set_dir, legacy=legacy)
   

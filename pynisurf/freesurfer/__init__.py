@@ -9,7 +9,7 @@ from .fs import (setup, version,
 from .fast import (funcdir,
                     sesslist)
 
-from .uti import (tocontrast, tohemi, tosig, totemplate, ana2con)
+from .util import (tocontrast, tohemi, tosig, totemplate, ana2con)
 
 __all__ = ['setup', 'version', 
            'subjdir', 'readsurf',

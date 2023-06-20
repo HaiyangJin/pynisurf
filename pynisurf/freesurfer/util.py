@@ -71,7 +71,6 @@ def _tohemi(filename, fn_only=True):
     return hemi
 
 
-
 def tohemi(fn_list, fn_only=True):
     """This function determine the hemispheres based on the filenames (if 'lh'
     or 'rh' is included in the filename).
@@ -95,7 +94,6 @@ def tohemi(fn_list, fn_only=True):
         print('\nThese files are for both hemispheres.')
     
     return hemis
-
 
     
 def tosig(fn_list):
@@ -124,7 +122,6 @@ def tosig(fn_list):
     sig = [float(s[1:]) for s in sig_str]
     
     return sig
-        
         
 
 def totemplate(ana_list, patterns=['fsaverage', 'self'], default_str='unknown'):
@@ -162,7 +159,6 @@ def totemplate(ana_list, patterns=['fsaverage', 'self'], default_str='unknown'):
     return templates
 
 
-
 def ana2con(ana_list, func_path=os.getenv('FUNCTIONALS_DIR')):
     """This function reads the contrast names within the analysis folders.
 
@@ -190,6 +186,7 @@ def ana2con(ana_list, func_path=os.getenv('FUNCTIONALS_DIR')):
         con_list[i] = [f.replace('.mat', '') for f in os.listdir(os.path.join(func_path, a)) if f.endswith('.mat')]
 
     return con_list
+
 
 # visualization
 def colors(color):

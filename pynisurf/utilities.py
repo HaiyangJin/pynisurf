@@ -4,12 +4,12 @@ General utilities.
 
 import subprocess, os
 
-def cmdpath(cmdlist, **kwargs):
+def cmdpath(cmd_list, **kwargs):
     """Convert directory/path to BASH compatible (e.g., convert ' ' to '\ ').
 
     Parameters
     ----------
-    cmdlist : str list OR str
+    cmd_list : str list OR str
         A list of or one cmd.
         
     Keyword Arguments
@@ -33,26 +33,26 @@ def cmdpath(cmdlist, **kwargs):
     kwargs = {**defaultKwargs, **kwargs}
     
     asstr = False
-    if isinstance(cmdlist, str):
-        cmdlist = [cmdlist]
+    if isinstance(cmd_list, str):
+        cmd_list = [cmd_list]
         asstr = True
     
     # replace the pairs
     for (k,v) in kwargs.items():
-        cmdlist = [cmd.replace(k,v) for cmd in cmdlist]
+        cmd_list = [cmd.replace(k,v) for cmd in cmd_list]
         
     if asstr:
-        cmdlist = cmdlist[0]
+        cmd_list = cmd_list[0]
         
-    return cmdlist   
+    return cmd_list   
     
     
-def runcmd(cmdlist, runcmd=True):
+def runcmd(cmd_list, runcmd=True):
     """Run BASH command and record the status.
 
     Parameters
     ----------
-    cmdlist : str list OR str
+    cmd_list : str list OR str
         A list of or one cmd.
     runcmd : int, optional
         Whether to run the commnad. Default to True.
@@ -65,16 +65,16 @@ def runcmd(cmdlist, runcmd=True):
         the status of running command (None means the commands were not run).
     """    
     
-    if isinstance(cmdlist, str):
-        cmdlist = [cmdlist]
+    if isinstance(cmd_list, str):
+        cmd_list = [cmd_list]
         
     if runcmd:
         # run the command
-        status = [subprocess.Popen(cmd, shell=True).wait() for cmd in cmdlist]
+        status = [subprocess.Popen(cmd, shell=True).wait() for cmd in cmd_list]
     else:
-        status = None * len(cmdlist)
+        status = None * len(cmd_list)
         
-    return cmdlist, status
+    return cmd_list, status
 
 
 def listdirabs(path):
