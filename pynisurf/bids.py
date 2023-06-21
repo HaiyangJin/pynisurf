@@ -112,7 +112,7 @@ def dcm2bids(dcm_subj, bids_subj=None, config=None, is_ses=False, run_cmd=True):
             # each sub-dir is one session
             dcmid = range(len(dcm_ses))
             sessid = range(1, len(dcm_ses)+1)
-            if len(dcmid)==1: sessid = is_ses # customize the session number
+            if len(dcmid)==1: sessid = [is_ses] # customize the session number
 
             # if the subdir in dsubjDir are sessions
             cmd = ['dcm2bids -d %s -o %s -p %s -s %d -c %s --forceDcm2niix --clobber' % (util.cmdpath(os.path.join(thisdabs, dcm_ses[dcmid[x]])), util.cmdpath(bids_dir), bids_subj[iSubj], sessid[x], config) for x in dcmid]
@@ -689,7 +689,10 @@ def fpdir(fp_dir=None, subj_wc='sub-*', set_dir=True, legacy=True):
         print(f'\n$FMRIPREP_DIR is set as {fp_dir} now...')
     
     # obtain the session codes
-    subj_list = [f for f in os.listdir(fp_dir) if re.match(subj_wc, f) and '.' not in f]
+    if os.path.isdir(fp_dir):
+        subj_list = [f for f in os.listdir(fp_dir) if re.match(subj_wc, f) and '.' not in f]
+    else:
+        subj_list = []
 
     return fp_dir, subj_list
     

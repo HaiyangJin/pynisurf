@@ -52,7 +52,7 @@ class project:
             wildcard to identify subject list, by default 'sub-*'
         """
         if os.path.isdir(bids_dir):
-            self.bidsdir, self.bidslist = bids.bidsdir(bids_dir, subj_wc, setdir=True)
+            self.bidsdir, self.bidslist = bids.bidsdir(bids_dir, subj_wc, set_dir=True)
 
             
     def setsubjdir(self, subj_dir, subj_wc='sub-*'):

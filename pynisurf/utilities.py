@@ -47,14 +47,14 @@ def cmdpath(cmd_list, **kwargs):
     return cmd_list   
     
     
-def runcmd(cmd_list, runcmd=True):
+def runcmd(cmd_list, run_cmd=True):
     """Run BASH command and record the status.
 
     Parameters
     ----------
     cmd_list : str list OR str
         A list of or one cmd.
-    runcmd : int, optional
+    run_cmd : int, optional
         Whether to run the commnad. Default to True.
 
     Returns
@@ -68,7 +68,7 @@ def runcmd(cmd_list, runcmd=True):
     if isinstance(cmd_list, str):
         cmd_list = [cmd_list]
         
-    if runcmd:
+    if run_cmd:
         # run the command
         status = [subprocess.Popen(cmd, shell=True).wait() for cmd in cmd_list]
     else:
