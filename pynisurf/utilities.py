@@ -2,7 +2,7 @@
 General utilities.
 '''
 
-import subprocess, os
+import subprocess, os, re
 
 def cmdpath(cmd_list, **kwargs):
     """Convert directory/path to BASH compatible (e.g., convert ' ' to '\ ').
@@ -72,7 +72,7 @@ def runcmd(cmd_list, run_cmd=True):
         # run the command
         status = [subprocess.Popen(cmd, shell=True).wait() for cmd in cmd_list]
     else:
-        status = None * len(cmd_list)
+        status = [None] * len(cmd_list)
         
     return cmd_list, status
 
@@ -112,3 +112,24 @@ def mkfile(content, fname='tmp'):
     with open(fname, 'w') as f:
         for line in content:
             f.write(line+'\n')
+
+def sortbyrun(file_list):
+    """Sort file list by run number (e.g., run-10).
+
+    Parameters
+    ----------
+    file_list : list
+        a list of file names, which should contain run number (e.g., run-10).
+
+    Returns
+    -------
+    list
+        a list of file names sorted by run number.
+    """
+    # get run number    
+    run_orig = [int(re.search('run-\d*', f)[0][4:]) for f in file_list]
+    # sort by run number
+    if bool(run_orig):    
+        file_list = [f for _, f in sorted(zip(run_orig, file_list))]
+    
+    return file_list

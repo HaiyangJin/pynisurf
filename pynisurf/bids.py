@@ -415,10 +415,12 @@ def cpevent(subj_code, event_wc=None, run_wc='*_bold.nii.gz', ses=None):
         # source files
         src = sorted(glob.glob(event_wc[iwd]))
         assert bool(src), (f'Cannot find %s in pwd.') % (event_wc[iwd])
+        src = util.sortbyrun(src)
         
         # destination files
         runs = sorted(glob.glob(os.path.join(bids_dir, subj_code, ses, 'func', run_wc[iwd])))
         assert bool(runs), (f'Cannot find %s in %s.') % (run_wc[iwd], os.path.join(bids_dir, subj_code, ses, 'func'))
+        runs = util.sortbyrun(runs)
         dst = [r.replace('_bold.nii.gz', '_events.tsv') for r in runs]
         
         # copy files
@@ -457,6 +459,8 @@ def dupsbref(subj_code, sbref_wc='*sbref.nii.gz', bold_wc='*_bold.nii.gz'):
         
         # repeat the sbref for each bold run
         [shutil.copyfile(sbref, b.replace('_bold.nii.gz', '_sbref.nii.gz')) for b in bold]
+        [shutil.copyfile(sbref.replace('_sbref.nii.gz', '_sbref.json'), 
+                         b.replace('_bold.nii.gz', '_sbref.json')) for b in bold]
     
 
 def mkignore(ignore_list=['tmp_dcm2bids/','tmp/','code/']):
