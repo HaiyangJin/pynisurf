@@ -9,7 +9,7 @@ from itertools import chain
 
 import pynisurf.utilities as util
 
-def bidsdir(bids_dir=None, subj_wc='sub-*', set_dir=True):
+def bidsdir(bids_dir=None, subj_wc='sub-*', set_dir=True, isfped=False):
     """Set `bids_dir` as a global environment "BIDS_DIR". `bids_dir`'s sub-directory should be the BIDS folder, which saves 'sourcedata', 'derivatives', 'sub-x', etc (or some of them).
 
     Parameters
@@ -35,7 +35,11 @@ def bidsdir(bids_dir=None, subj_wc='sub-*', set_dir=True):
     # set the environment variable of BIDS_DIR
     if set_dir:
         os.environ['BIDS_DIR'] = bids_dir
-        print(f'\n$BIDS_DIR is set as {bids_dir} now...')
+        print(f'\nBIDS_DIR is set as {bids_dir} now...')
+        
+        if isfped:
+            os.environ['FMRIPREP_DIR'] = os.path.join(bids_dir, 'derivatives', 'fmriprep')
+            print(f'\nFMRIPREP_DIR is set as %s now...' % os.getenv('FMRIPREP_DIR'))
     
     # obtain the session codes
     subj_list = [f for f in os.listdir(bids_dir) if re.match(subj_wc, f) and '.' not in f]
