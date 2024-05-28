@@ -704,3 +704,20 @@ def fpdir(fp_dir=None, subj_wc='sub-*', set_dir=True, legacy=True):
 
     return fp_dir, subj_list
     
+    
+def vtx2mni152(vtx_idx, subj_code, hemi='lh', fsdir=None):
+    
+    subj_code = ['sub-101']
+    
+    # MNI152NLin6Asym
+    # MNI152NLin2009cAsym
+    
+    # mat_from-fsnative_to-T1w
+    
+    # mat_from-T1w_to-MNI152
+    
+    mat_fsnative = listfile('*from-fsnative_to-T1*xfm.txt', subj_code, 'anat')
+    assert bool(mat_fsnative), (f'Cannot find from-fsnative_to-T1 matrix file.')
+    assert len(mat_fsnative)==1, (f'More than one from-fsnative_to-T1 matrix files are found.')
+    
+    mat_fsnative[0]
